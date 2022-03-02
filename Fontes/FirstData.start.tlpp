@@ -6,7 +6,7 @@ namespace FirstData
 user function start()
 
 	//Cria o MsApp
- 	MsApp():New('SIGAESP')
+	MsApp():New('SIGAESP')
 	oApp:CreateEnv()
 
 	//Define o programa que será executado após o login
@@ -20,44 +20,41 @@ return
 
 user function BrowserLayout()
 
-	if CheckEnvironment()
+	private cDirSeparator   := if( IsSrvUnix(), '/', '\' )
+	private cMainPath       := cDirSeparator + 'First_Data'
+	private cEmpPath        := cMainPath + cDirSeparator + cEmpAnt
+	private cLayoutsPath    := cEmpPath + cDirSeparator + 'layouts' + cDirSeparator
 
+	private cVersionPicture := '@R N.NN'
 
+	if CheckPathStruct()
 
+		showBrowseLayouts()
 
 	end if
 
 return
 
-static function CheckEnvironment()
+static function CheckPathStruct()
 
-	local cDirSeparator    :=  if( IsSrvUnix(), '/', '\' )
-	local cMainPath        := cDirSeparator + 'First_Data'
-	local cExtensionFile   := GetSrvProfString(  'localdbextension', '.dtc' )
-	local cExtensionIndex  := '.idx'
+	//** Valida a existencia da estrutura de pastas
+	if ! ( makePath(cMainPath) .And.;
+			makePath(cEmpPath) .And.;
+			makePath(cLayoutsPath) )
 
-	local cLayoutsTable    := 'layouts' + cEmpAnt
-	local cProcessingTable := 'processing' + cEmpAnt
+		return .F.
 
-	local cLayoutsFile    := cMainPath + cDirSeparator + cLayoutsTable
-	local cProcessingFile := cMainPath + cDirSeparator + cProcessingTable
+	end if
 
-	local nLenLayoutCode            := 10
-	local nLenLayoutVersion         := 03
-	local nLenLayoutDescription     := 50
+return .T.
 
-	local nLenProcessingCode        := 10
-	local nLenProcessingVersion     := 03
-	local nLenProcessingDescription := 50
+static function makePath( cPath )
 
-	local cDriver                   := 'CTREECDX' //'TOPCONN'
+	if ! existDir( cPath )
 
-	//** Valida existencia da pasta principal
-	if ! existDir( cMainPath )
+		if makeDir( cPath ) != 0
 
-		if makeDir( cMainPath ) != 0
-
-			ApMsgStop('Não foi possível criar o diretório de base.')
+			ApMsgStop('Não foi possível criar a pasta: "' + cPath + '", consulte o erros: ' + cValtoChar( fError() ) )
 
 			return .F.
 
@@ -65,33 +62,295 @@ static function CheckEnvironment()
 
 	end if
 
-	//** Valida a existencia da tabela de layouts
-	if ! file( cLayoutsFile + cExtensionFile)
-
-		DBCreate( cLayoutsFile  + cExtensionFile, {;
-			{ 'CODE'      , 'C', nLenLayoutCode        , 00 },;
-			{ 'VERSION'   , 'C', nLenLayoutVersion     , 00 },;
-			{ 'DESCRIPIT' , 'C', nLenLayoutDescription , 00 },;
-			{ 'JSON'      , 'M', 00                    , 00 } ;
-			}, cDriver )
-
-		DBUseArea( .F., cDriver, cLayoutsFile, cLayoutsTable, .F., .F. )
-
-		( cLayoutsTable )->( DBCreateIndex( cLayoutsFile + 'a' + cExtensionIndex, 'CODE+VERSION', { || 'CODE+VERSION' } ) )
-
-	end if
-
-	//** Valida a existencia da tabela de processamentos (processing)
-	if ! file( cProcessingFile  + cExtensionFile)
-
-		DBCreate( cProcessingFile + cExtensionFile, {;
-			{ 'CODE'      , 'C', nLenProcessingCode        , 00 },;
-			{ 'VERSION'   , 'C', nLenProcessingVersion     , 00 },;
-			{ 'DESCRIPIT' , 'C', nLenProcessingDescription , 00 },;
-			{ 'LAY_CODE'  , 'C', nLenLayoutCode            , 00 },;
-			{ 'LAY_VERS'  , 'C', nLenLayoutVersion         , 00 } ;
-			}, cDriver )
-
-	end if
-
 return .T.
+
+static function showBrowseLayouts()
+
+	Local oDfSzDlg    := FwDefSize():New( .F. )
+	Local oDfSzBtn    := FwDefSize():New( .F. )
+	Local oFontBrw    := TFont():New( 'Consolas',,-12 )
+	local oFontBtn    := TFont():New( 'Consolas',,-12,,.T. )
+	Local cTitle      := 'First Data - Definição de Layouts'
+	Local oDlg        := Nil
+	Local oBtnInclude := Nil
+	Local oBtnUpdate  := Nil
+	Local oBtnVersion := Nil
+	Local oBtnImport  := Nil
+	Local oBtnDelete  := Nil
+	Local oBtnProcess := Nil
+	Local oBtnClose   := Nil
+	Local oBrowse     := Nil
+	Local aHeaders    := {'CÓDIGO','VERSÃO','DESCRIÇÃO'}
+	Local aLinesBrw   := {}
+	Local bLinesBrw   := {|| { aLinesBrw[ oBrowse:nAt, 1 ], aLinesBrw[ oBrowse:nAt, 2 ], aLinesBrw[ oBrowse:nAt, 3 ] } }
+
+	oDfSzDlg:AddObject ( 'oButtons', 000, 015, .T., .F. )
+	oDfSzDlg:AddObject ( 'oBrowse' , 000, 000, .T., .T. )
+	oDfSzDlg:Process()
+
+	oDfSzBtn:AddObject ( 'oBtnInclude' , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnUpdate'  , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnVersion' , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnImport'  , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnView'    , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnDelete'  , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnProcess' , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnClose'   , 055, 015, .F., .F. )
+	oDfSzBtn:lLateral := .T.
+	oDfSzBtn:Process()
+
+	oDlg := MsDialog():New(;
+	/* nTop         */ oDfSzDlg:aWindSize[ 1 ] ,;
+	/* nLeft        */ oDfSzDlg:aWindSize[ 2 ] ,;
+	/* nBottom      */ oDfSzDlg:aWindSize[ 3 ] ,;
+	/* nRight       */ oDfSzDlg:aWindSize[ 4 ] ,;
+	/* cCaption     */                  cTitle ,;
+	/* uParam6      */                         ,;
+	/* uParam7      */                         ,;
+	/* uParam8      */                         ,;
+	/* uParam9      */                         ,;
+	/* nClrText     */                         ,;
+	/* nClrBack     */                         ,;
+	/* uParam12     */                         ,;
+	/* oWnd         */                         ,;
+	/* lPixel       */                     .T. ,;
+	/* uParam15     */                         ,;
+	/* uParam16     */                         ,;
+	/* uParam17     */                         ,;
+	/* lTransparent */                          )
+
+	oBtnInclude := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnInclude', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnInclude', 'COLINI' ) ,;
+	/* cCaption */                                         'INCLUIR' ,;
+	/* oWnd     */                                              oDlg ,;
+	/* bAction  */                            { || includeLayout() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnInclude', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnInclude', 'YSIZE'  ) ,;
+	/* uParam8  */                                                   ,;
+	/* oFont    */                                          oFontBtn ,;
+	/* uParam10 */                                                   ,;
+	/* lPixel   */                                               .T. ,;
+	/* uParam12 */                                                   ,;
+	/* uParam13 */                                                   ,;
+	/* uParam14 */                                                   ,;
+	/* bWhen    */                                                   ,;
+	/* uParam16 */                                                   ,;
+	/* uParam17 */                                                    )
+
+	oBtnUpdate := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnUpdate', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnUpdate', 'COLINI' ) ,;
+	/* cCaption */                                        'ALTERAR' ,;
+	/* oWnd     */                                             oDlg ,;
+	/* bAction  */                                { || oDlg:end() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnUpdate', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnUpdate', 'YSIZE'  ) ,;
+	/* uParam8  */                                                  ,;
+	/* oFont    */                                         oFontBtn ,;
+	/* uParam10 */                                                  ,;
+	/* lPixel   */                                              .T. ,;
+	/* uParam12 */                                                  ,;
+	/* uParam13 */                                                  ,;
+	/* uParam14 */                                                  ,;
+	/* bWhen    */                                                  ,;
+	/* uParam16 */                                                  ,;
+	/* uParam17 */                                                   )
+
+	oBtnVersion := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnVersion', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnVersion', 'COLINI' ) ,;
+	/* cCaption */                                       'VERSIONAR' ,;
+	/* oWnd     */                                              oDlg ,;
+	/* bAction  */                                 { || oDlg:end() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnVersion', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnVersion', 'YSIZE'  ) ,;
+	/* uParam8  */                                                   ,;
+	/* oFont    */                                          oFontBtn ,;
+	/* uParam10 */                                                   ,;
+	/* lPixel   */                                               .T. ,;
+	/* uParam12 */                                                   ,;
+	/* uParam13 */                                                   ,;
+	/* uParam14 */                                                   ,;
+	/* bWhen    */                                                   ,;
+	/* uParam16 */                                                   ,;
+	/* uParam17 */                                                    )
+
+	oBtnImport := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnImport', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnImport', 'COLINI' ) ,;
+	/* cCaption */                                       'IMPORTAR' ,;
+	/* oWnd     */                                             oDlg ,;
+	/* bAction  */                                { || oDlg:end() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnImport', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnImport', 'YSIZE'  ) ,;
+	/* uParam8  */                                                  ,;
+	/* oFont    */                                         oFontBtn ,;
+	/* uParam10 */                                                  ,;
+	/* lPixel   */                                              .T. ,;
+	/* uParam12 */                                                  ,;
+	/* uParam13 */                                                  ,;
+	/* uParam14 */                                                  ,;
+	/* bWhen    */                                                  ,;
+	/* uParam16 */                                                  ,;
+	/* uParam17 */                                                   )
+
+	oBtnView := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnView', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnView', 'COLINI' ) ,;
+	/* cCaption */                                   'VISUALIZAR' ,;
+	/* oWnd     */                                           oDlg ,;
+	/* bAction  */                              { || oDlg:end() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnView', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnView', 'YSIZE'  ) ,;
+	/* uParam8  */                                                ,;
+	/* oFont    */                                       oFontBtn ,;
+	/* uParam10 */                                                ,;
+	/* lPixel   */                                            .T. ,;
+	/* uParam12 */                                                ,;
+	/* uParam13 */                                                ,;
+	/* uParam14 */                                                ,;
+	/* bWhen    */                                                ,;
+	/* uParam16 */                                                ,;
+	/* uParam17 */                                                 )
+
+	oBtnDelete := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnDelete', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnDelete', 'COLINI' ) ,;
+	/* cCaption */                                        'EXCLUIR' ,;
+	/* oWnd     */                                             oDlg ,;
+	/* bAction  */                                { || oDlg:end() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnDelete', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnDelete', 'YSIZE'  ) ,;
+	/* uParam8  */                                                  ,;
+	/* oFont    */                                         oFontBtn ,;
+	/* uParam10 */                                                  ,;
+	/* lPixel   */                                              .T. ,;
+	/* uParam12 */                                                  ,;
+	/* uParam13 */                                                  ,;
+	/* uParam14 */                                                  ,;
+	/* bWhen    */                                                  ,;
+	/* uParam16 */                                                  ,;
+	/* uParam17 */                                                   )
+
+	oBtnProcess := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnProcess', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnProcess', 'COLINI' ) ,;
+	/* cCaption */                                  'PROCESSAMENTOS' ,;
+	/* oWnd     */                                              oDlg ,;
+	/* bAction  */                                 { || oDlg:end() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnProcess', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnProcess', 'YSIZE'  ) ,;
+	/* uParam8  */                                                   ,;
+	/* oFont    */                                          oFontBtn ,;
+	/* uParam10 */                                                   ,;
+	/* lPixel   */                                               .T. ,;
+	/* uParam12 */                                                   ,;
+	/* uParam13 */                                                   ,;
+	/* uParam14 */                                                   ,;
+	/* bWhen    */                                                   ,;
+	/* uParam16 */                                                   ,;
+	/* uParam17 */                                                    )
+
+	oBtnClose := TButton():New(;
+	/* nRow     */  oDfSzBtn:GetDimension( 'oBtnClose', 'LININI' ) ,;
+	/* nCol     */  oDfSzBtn:GetDimension( 'oBtnClose', 'COLINI' ) ,;
+	/* cCaption */                                        'FECHAR' ,;
+	/* oWnd     */                                            oDlg ,;
+	/* bAction  */                               { || oDlg:end() } ,;
+	/* nWidth   */  oDfSzBtn:GetDimension( 'oBtnClose', 'XSIZE'  ) ,;
+	/* nHeight  */  oDfSzBtn:GetDimension( 'oBtnClose', 'YSIZE'  ) ,;
+	/* uParam8  */                                                 ,;
+	/* oFont    */                                        oFontBtn ,;
+	/* uParam10 */                                                 ,;
+	/* lPixel   */                                             .T. ,;
+	/* uParam12 */                                                 ,;
+	/* uParam13 */                                                 ,;
+	/* uParam14 */                                                 ,;
+	/* bWhen    */                                                 ,;
+	/* uParam16 */                                                 ,;
+	/* uParam17 */                                                  )
+
+	oBrowse := TWBrowse():New(;
+	/* nRow       */ oDfSzDlg:GetDimension( 'oBrowse', 'LININI' ) ,;
+	/* nCol       */ oDfSzDlg:GetDimension( 'oBrowse', 'COLINI' ) ,;
+	/* nWidth     */ oDfSzDlg:GetDimension( 'oBrowse', 'XSIZE'  ) ,;
+	/* nHeight    */ oDfSzDlg:GetDimension( 'oBrowse', 'YSIZE'  ) ,;
+	/* bLine      */                                              ,;
+	/* aHeaders   */                                     aHeaders ,;
+	/* aColSizes  */                                              ,;
+	/* oDlg       */                                         oDlg ,;
+	/* cField     */                                              ,;
+	/* uValue1    */                                              ,;
+	/* uValue2    */                                              ,;
+	/* bChange    */                                              ,;
+	/* bLDblClick */                                              ,;
+	/* bRClick    */                                              ,;
+	/* oFont      */                                     oFontBrw ,;
+	/* oCursor    */                                              ,;
+	/* nClrFore   */                                              ,;
+	/* nClrBack   */                                              ,;
+	/* cMsg       */                                              ,;
+	/* uParam20   */                                              ,;
+	/* cAlias     */                                              ,;
+	/* lPixel     */                                          .T. ,;
+	/* bWhen      */                                              ,;
+	/* uParam24   */                                              ,;
+	/* bValid     */                                              ,;
+	/* lHScroll   */                                          .T. ,;
+	/* lVScroll   */                                          .T.  )
+
+	getLayouts( @aLinesBrw )
+
+	oBrowse:setArray( aLinesBrw )
+	oBrowse:bLine    := bLinesBrw
+
+	oDlg:Activate(,,,.T.)
+
+return
+
+static function getLayouts( aLinesBrw )
+
+	local aLayouts     := Directory( cLayoutsPath + '*.json',,, .F., 1 )
+	local nX           := 0
+	local cCode        := ''
+	local cVersion     := ''
+	local cDescription := ''
+
+	for nX := 1 to len( aLayouts )
+
+		getDataLayout( cLayoutsPath + aLayouts[ nX, 1 ], @cCode, @cVersion, @cDescription )
+
+		aAdd( aLinesBrw, { cCode, cVersion, cDescription } )
+
+	next nX
+
+return
+
+static function getDataLayout( cLayoutFile, cCode, cVersion, cDescription )
+
+	local oJson := JsonObject():New()
+
+	oJson:fromJSON( MemoRead( cLayoutFile, .F. ) )
+
+	cCode        := oJson['CODIGO']
+	cVersion     := Transform( cVersionPicture, ( oJson['VERSAO'] ) )
+	cDescription := oJson['DESCRICAO']
+
+return
+
+static function includeLayout()
+	Local oFont := TFont():New("Consolas",,-12)
+	Local oGet1
+	Local cGet1 := Space(10)
+	Local oSay1
+	Static oDlg
+
+	DEFINE MSDIALOG oDlg TITLE "New Dialog" FROM 000, 000  TO 500, 500 COLORS 0, 16777215 PIXEL
+
+	@ 002, 002 SAY oSay1 PROMPT "Código" SIZE 045, 012 OF oDlg FONT oFont COLORS 0, 16777215 PIXEL
+	@ 015, 002 MSGET oGet1 VAR cGet1 SIZE 060, 013 OF oDlg COLORS 0, 16777215 FONT oFont PIXEL
+
+	ACTIVATE MSDIALOG oDlg CENTERED
+
+Return
