@@ -6,7 +6,7 @@ namespace FirstData
 user function start()
 
 	//Cria o MsApp
-	MsApp():New('SIGAESP')
+ 	MsApp():New('SIGAESP')
 	oApp:CreateEnv()
 
 	//Define o programa que será executado após o login
@@ -22,21 +22,25 @@ user function BrowserLayout()
 
 	if CheckEnvironment()
 
-		
+
+
+
 	end if
 
 return
 
 static function CheckEnvironment()
 
-	local cDirSeparator    :=  if(IsSrvUnix(),'/','\')
+	local cDirSeparator    :=  if( IsSrvUnix(), '/', '\' )
 	local cMainPath        := cDirSeparator + 'First_Data'
-	local cExtension       := GetSrvProfString(  'localdbextension', '.dtc' )
+	local cExtensionFile   := GetSrvProfString(  'localdbextension', '.dtc' )
+	local cExtensionIndex  := '.idx'
 
-	local cLayoutsTable    := cMainPath + cDirSeparator + 'layouts'     + cEmpAnt + cExtension
-	local cProcessingTable := cMainPath + cDirSeparator + 'processing'  + cEmpAnt + cExtension
+	local cLayoutsTable    := 'layouts' + cEmpAnt
+	local cProcessingTable := 'processing' + cEmpAnt
 
-	local nLenBranch                := len( cFilAnt )
+	local cLayoutsFile    := cMainPath + cDirSeparator + cLayoutsTable
+	local cProcessingFile := cMainPath + cDirSeparator + cProcessingTable
 
 	local nLenLayoutCode            := 10
 	local nLenLayoutVersion         := 03
@@ -45,6 +49,8 @@ static function CheckEnvironment()
 	local nLenProcessingCode        := 10
 	local nLenProcessingVersion     := 03
 	local nLenProcessingDescription := 50
+
+	local cDriver                   := 'CTREECDX' //'TOPCONN'
 
 	//** Valida existencia da pasta principal
 	if ! existDir( cMainPath )
@@ -60,29 +66,31 @@ static function CheckEnvironment()
 	end if
 
 	//** Valida a existencia da tabela de layouts
-	if ! file( cLayoutsTable )
+	if ! file( cLayoutsFile + cExtensionFile)
 
-		DBCreate( cLayoutsTable, {;
-			{ 'BRANCH'    , 'C', nLenBranch            , 00 },;
+		DBCreate( cLayoutsFile  + cExtensionFile, {;
 			{ 'CODE'      , 'C', nLenLayoutCode        , 00 },;
 			{ 'VERSION'   , 'C', nLenLayoutVersion     , 00 },;
 			{ 'DESCRIPIT' , 'C', nLenLayoutDescription , 00 },;
 			{ 'JSON'      , 'M', 00                    , 00 } ;
-			}, 'CTREECDX' )
+			}, cDriver )
+
+		DBUseArea( .F., cDriver, cLayoutsFile, cLayoutsTable, .F., .F. )
+
+		( cLayoutsTable )->( DBCreateIndex( cLayoutsFile + 'a' + cExtensionIndex, 'CODE+VERSION', { || 'CODE+VERSION' } ) )
 
 	end if
 
 	//** Valida a existencia da tabela de processamentos (processing)
-	if ! file( cProcessingTable )
+	if ! file( cProcessingFile  + cExtensionFile)
 
-		DBCreate( cProcessingTable, {;
-			{ 'BRANCH'    , 'C', nLenBranch                , 00 },;
+		DBCreate( cProcessingFile + cExtensionFile, {;
 			{ 'CODE'      , 'C', nLenProcessingCode        , 00 },;
 			{ 'VERSION'   , 'C', nLenProcessingVersion     , 00 },;
 			{ 'DESCRIPIT' , 'C', nLenProcessingDescription , 00 },;
 			{ 'LAY_CODE'  , 'C', nLenLayoutCode            , 00 },;
 			{ 'LAY_VERS'  , 'C', nLenLayoutVersion         , 00 } ;
-			}, 'CTREECDX' )
+			}, cDriver )
 
 	end if
 
