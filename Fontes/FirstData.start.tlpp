@@ -10,13 +10,12 @@ user function start()
 	oApp:CreateEnv()
 
 	//Define o programa que será executado após o login
-	oApp:cStartProg    := 'FirstData.u_BrowserLayout'//'FirstData.u_BrowserLayout'
+	oApp:cStartProg    := 'FirstData.u_BrowserLayout'
 
 	//Inicia a Janela
 	oApp:Activate()
 
 return
-
 
 user function BrowserLayout()
 
@@ -152,7 +151,7 @@ static function maintenanceLayout( nOperation )
 
 	Local oSaySeparador   := nil
 	Local oComboSeparador := nil
-	Local nComboSeparador := 1
+	Local cComboSeparador := ''
 
 	oDefSize:AddObject ( 'oBrowse' , 000, 000, .T., .T. )
 	oDefSize:Process()
@@ -170,7 +169,7 @@ static function maintenanceLayout( nOperation )
 	@ 045, 090 MSGET oGetDescricao VAR cGetDescricao SIZE 190, 010 OF oDlg PICTURE '@!' PIXEL
 
 	@ 035, 285 SAY oSaySeparador PROMPT 'Separador' SIZE 190, 010 OF oDlg PIXEL
-	@ 045, 285 MSCOMBOBOX oComboSeparador VAR nComboSeparador ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
+	@ 045, 285 MSCOMBOBOX oComboSeparador VAR cComboSeparador ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
 
 	ACTIVATE MSDIALOG oDlg CENTERED;
 		ON INIT EnchoiceBar( oDlg, {||funcok(oComboSeparador),oDlg:End()}, {||oDlg:End()},,,,,.F.,.F.,.F.,.T./*Exibe Botão Confirmar*/,.F. )
