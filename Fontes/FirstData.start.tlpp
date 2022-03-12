@@ -24,8 +24,8 @@ user function BrowserLayout()
 	private cEmpPath        := cMainPath + cDirSeparator + cEmpAnt
 	private cLayoutsPath    := cEmpPath + cDirSeparator + 'layouts' + cDirSeparator
 
-	private oFontBrw    := TFont():New( 'Consolas',,-12 )
-	private oFontBtn    := TFont():New( 'Consolas',,-12,,.T. )
+	//private oFontBrw    := TFont():New( 'Consolas',,-12 )
+	//private oFontBtn    := TFont():New( 'Consolas',,-12,,.T. )
 
 	private cVersionPicture := '@!R N.NN'
 
@@ -70,32 +70,44 @@ static function showBrowseLayouts()
 
 	Local oDefSize    := FwDefSize():New( .T. )
 	Local cTitle      := 'First Data - Definição de Layouts'
-	Local oDlg        := Nil
+	Local oDlg        := nil
+	Local oPanel      := nil
 	local aButtons    := {}
-	Local oBrowse     := Nil
+	Local oBrowse     := nil
 	Local aLinesBrw   := {}
 
-	oDefSize:AddObject ( 'oBrowse' , 000, 000, .T., .T. )
+	oDefSize:AddObject ( 'oPanel' , 000, 000, .T., .T. )
 	oDefSize:Process()
 
 	DEFINE MSDIALOG oDlg TITLE cTitle FROM  oDefSize:aWindSize[1],oDefSize:aWindSize[2];
 		TO oDefSize:aWindSize[3],oDefSize:aWindSize[4] PIXEL
 
-	aAdd( aButtons, { '', {|| maintenanceLayout( 1 ) }, 'Incluir' } )
+	aAdd( aButtons, { '', {|| LayoutMaintenance( 1 ) }, 'Incluir' } )
 	aAdd( aButtons, { '', {||}, 'Alterar' } )
 	aAdd( aButtons, { '', {||}, 'Copiar' } )
 	aAdd( aButtons, { '', {||}, 'Importar' } )
 	aAdd( aButtons, { '', {||}, 'Deletar' } )
 	aAdd( aButtons, { '', {||}, 'Processamentos' } )
 
+	@ oDefSize:GetDimension("oPanel","LININI"), oDefSize:GetDimension("oPanel","COLINI") MSPANEL oPanel;
+		SIZE oDefSize:GetDimension("oPanel","XSIZE"), oDefSize:GetDimension("oPanel","YSIZE") OF oDlg
+
+	oBrowse := fwBrowse():New()
+	oBrowse:setOwner( oPanel )
+
 	getLayouts( aLinesBrw )
 
-	@ oDefSize:GetDimension("oBrowse","LININI"), oDefSize:GetDimension("oBrowse","COLINI") LISTBOX oBrowse;
-		Fields HEADER "Código","Versão","Descrição";
-		SIZE oDefSize:GetDimension("oBrowse","XSIZE"), oDefSize:GetDimension("oBrowse","YSIZE") OF oDlg PIXEL
-
+	oBrowse:setDataArray()
 	oBrowse:setArray( aLinesBrw )
-	oBrowse:bLine    :=  {|| { aLinesBrw[ oBrowse:nAt, 1 ], aLinesBrw[ oBrowse:nAt, 2 ], aLinesBrw[ oBrowse:nAt, 3 ] } }
+	oBrowse:disableConfig()
+	oBrowse:disableReport()
+	oBrowse:SetLocate()
+
+	oBrowse:addColumn({'Código'   , {|| PadR( aLinesBrw[ oBrowse:nAt, 01 ], 10 ) }, 'C', '@!'           , 1, 05, 0, .F.,,.F.,, 'aLinesBrw[ oBrowse:nAt, 01 ]',,.F., .T., ,'COL1' } )
+	oBrowse:addColumn({'Versão'   , {|| PadR( aLinesBrw[ oBrowse:nAt, 02 ], 04 ) }, 'C', cVersionPicture, 1, 05, 0, .F.,,.F.,, 'aLinesBrw[ oBrowse:nAt, 02 ]',,.F., .T., ,'COL2' } )
+	oBrowse:addColumn({'Descrição', {|| PadR( aLinesBrw[ oBrowse:nAt, 03 ], 50 ) }, 'C', '@!'           , 1, 20, 0, .F.,,.F.,, 'aLinesBrw[ oBrowse:nAt, 03 ]',,.F., .T., ,'COL3' } )
+
+	oBrowse:Activate(.T.)
 
 	ACTIVATE MSDIALOG oDlg CENTERED;
 		ON INIT EnchoiceBar( oDlg, {||Nil}, {||oDlg:End()},,aButtons,,,.F.,.F.,.F.,.F.,.F. )
@@ -132,11 +144,14 @@ static function getDataLayout( cLayoutFile, cCode, cVersion, cDescription )
 
 return
 
-static function maintenanceLayout( nOperation )
+static function LayoutMaintenance( nOperation )
 
 	Local oDefSize    := FwDefSize():New( .T. )
-	Local cTitle      := 'First Data - Definição de Layouts'
+	Local aOperacao   := {'Inclusão', 'Alteração', 'Visualização' }
+	Local cTitle      := 'First Data - ' + aOperacao[ nOperation ] + ' de Layouts'
 	Local oDlg        := nil
+	Local oJsonLayout := nil
+
 	Local oSayCode    := nil
 	Local oGetCode    := nil
 	Local cGetCode    := Space(10)
@@ -145,13 +160,46 @@ static function maintenanceLayout( nOperation )
 	Local oGetVersion := nil
 	Local cGetVersion := Space(3)
 
-	Local oSayDescricao := nil
-	Local oGetDescricao := nil
-	Local cGetDescricao := Space(50)
+	Local oSayDescription := nil
+	Local oGetDescription := nil
+	Local cGetDescription := Space(50)
 
-	Local oSaySeparador   := nil
-	Local oComboSeparador := nil
-	Local cComboSeparador := ''
+	Local oSaySeparator   := nil
+	Local oComboSeparator := nil
+	Local cComboSeparator := ''
+
+	Local oSayEncode   := nil
+	Local oComboEncode := nil
+	Local cComboEncode := ''
+
+	Local oSaySepDecimal   := nil
+	Local oComboSepDecimal := nil
+	Local cComboSepDecimal := ''
+
+	Local oSayFormatDate   := nil
+	Local oComboFormatDate := nil
+	Local cComboFormatDate := ''
+
+	Local oSayFinallity    := nil
+	Local oMltGetFinallity := nil
+	Local cMltGetFinallity := ''
+
+	Local oSayChannels  := nil
+	Local oTreeChannels := nil
+
+	Local oMenuPopUp     := nil
+	Local oMenuItInclude := nil
+	Local oMenuItUpdate  := nil
+	Local oMenuItView    := nil
+	Local oMenuItDelete  := nil
+
+	if nOperation == 1
+
+		oJsonLayout := { "channels" : array( 0 ) }
+
+	else
+
+	end if
 
 	oDefSize:AddObject ( 'oBrowse' , 000, 000, .T., .T. )
 	oDefSize:Process()
@@ -165,17 +213,78 @@ static function maintenanceLayout( nOperation )
 	@ 035, 060 SAY oSayVersion PROMPT 'Versão' SIZE 020, 010 OF oDlg PIXEL
 	@ 045, 060 MSGET oGetVersion VAR cGetVersion SIZE 020, 010 OF oDlg  PICTURE cVersionPicture PIXEL
 
-	@ 035, 090 SAY oSayDescricao PROMPT 'Descrição' SIZE 190, 010 OF oDlg PIXEL
-	@ 045, 090 MSGET oGetDescricao VAR cGetDescricao SIZE 190, 010 OF oDlg PICTURE '@!' PIXEL
+	@ 035, 090 SAY oSayDescription PROMPT 'Descrição' SIZE 210, 010 OF oDlg PIXEL
+	@ 045, 090 MSGET oGetDescription VAR cGetDescription SIZE 210, 010 OF oDlg PICTURE '@!' PIXEL
 
-	@ 035, 285 SAY oSaySeparador PROMPT 'Separador' SIZE 190, 010 OF oDlg PIXEL
-	@ 045, 285 MSCOMBOBOX oComboSeparador VAR cComboSeparador ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
+	@ 035, 305 SAY oSaySeparator PROMPT 'Separador' SIZE 070, 010 OF oDlg PIXEL
+	@ 045, 305 MSCOMBOBOX oComboSeparator VAR cComboSeparator ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
+
+	@ 035, 380 SAY oSayEncode PROMPT 'Codepage' SIZE 070, 010 OF oDlg PIXEL
+	@ 045, 380 MSCOMBOBOX oComboEncode VAR cComboEncode ITEMS {"CP-1252","UTF-8"} SIZE 070, 013 OF oDlg PIXEL
+
+	@ 035, 455 SAY oSaySepDecimal PROMPT 'Separador Decimal' SIZE 070, 010 OF oDlg PIXEL
+	@ 045, 455 MSCOMBOBOX oComboSepDecimal VAR cComboSepDecimal ITEMS {"Vírgula (,)","Ponto (.)"} SIZE 070, 013 OF oDlg PIXEL
+
+	@ 035, 530 SAY oSayFormatDate PROMPT 'Formato da Data' SIZE 070, 010 OF oDlg PIXEL
+	@ 045, 530 MSCOMBOBOX oComboFormatDate VAR cComboFormatDate ITEMS {"DD/MM/AAAA","AAAAMMDD"} SIZE 070, 013 OF oDlg PIXEL
+
+	@ 065, 005 SAY oSayFinallity PROMPT 'Finalidade' SIZE 595, 010 OF oDlg PIXEL
+	@ 075, 005 GET oMltGetFinallity VAR cMltGetFinallity OF oDlg MULTILINE SIZE 595, 050 HSCROLL PIXEL
+
+	@ 135, 005 SAY oSayChannels PROMPT 'Canais' SIZE 595, 010 OF oDlg PIXEL
+	oTreeChannels := xTree():New( 145, 005, 300, 600, oDlg)
+
+	oMenuPopUp     := TMenu():New(0,0,0,0,.T.)
+
+	oMenuItInclude := TMenuItem():New(oDlg, 'Incluir'    ,,,, { || channelMaintenance( oTreeChannels, 1, oJsonLayout ) },,,,,,,,,.T.)
+	oMenuItUpdate  := TMenuItem():New(oDlg, 'Alterar'    ,,,, { || channelMaintenance( oTreeChannels, 2, oJsonLayout ) },,,,,,,,,.T.)
+	oMenuItView    := TMenuItem():New(oDlg, 'Visualizar' ,,,, { || channelMaintenance( oTreeChannels, 3, oJsonLayout ) },,,,,,,,,.T.)
+	oMenuItDelete  := TMenuItem():New(oDlg, 'Deletar'    ,,,, { || channelMaintenance( oTreeChannels, 4, oJsonLayout ) },,,,,,,,,.T.)
+
+	oMenuPopUp:Add( oMenuItInclude )
+	oMenuPopUp:Add( oMenuItUpdate  )
+	oMenuPopUp:Add( oMenuItView    )
+	oMenuPopUp:Add( oMenuItDelete  )
+
+	oTreeChannels:SetPopup( oMenuPopUp )
 
 	ACTIVATE MSDIALOG oDlg CENTERED;
 		ON INIT EnchoiceBar( oDlg, {||funcok(oComboSeparador),oDlg:End()}, {||oDlg:End()},,,,,.F.,.F.,.F.,.T./*Exibe Botão Confirmar*/,.F. )
 
 Return
 
+static function channelMaintenance( oTreeChannels, nOperation, oJsonLayout )
+
+	local isEmpty      := oTreeChannels:isEmpty()
+	local cName        := FwInputBox( 'Informe o Nome do Canal.', Space( 20 ) )
+	local cCargo       := ''
+	local cCargoFather := ''
+
+	if nOperation == 1
+
+		cCargo := FWUUIDV4(.F.)
+
+		if isEmpty
+
+			cCargoFather := ''
+
+			oTreeChannels:AddItem ( cName, cCargo, 'FOLDER5', 'FOLDER6', 1 )
+
+		else
+
+			cCargoFather := oTreeChannels:GetCargo()
+
+			oTreeChannels:AddItem ( cName, cCargo, 'FOLDER5', 'FOLDER6', 2 )
+
+		end if
+
+		aAdd( oJsonLayout['channels'], { "name": cName, "cargo": cCargo, "cargoFather": cCargoFather } )
+
+	else
+
+	end if
+
+return
 
 static function funcok(oComboSeparador)
 
