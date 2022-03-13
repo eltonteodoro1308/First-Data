@@ -85,8 +85,9 @@ static function showBrowseLayouts()
 	aAdd( aButtons, { '', {|| LayoutMaintenance( 1 ) }, 'Incluir' } )
 	aAdd( aButtons, { '', {||}, 'Alterar' } )
 	aAdd( aButtons, { '', {||}, 'Copiar' } )
-	aAdd( aButtons, { '', {||}, 'Importar' } )
 	aAdd( aButtons, { '', {||}, 'Deletar' } )
+	aAdd( aButtons, { '', {||}, 'Importar' } )
+	aAdd( aButtons, { '', {||}, 'Exportar' } )
 	aAdd( aButtons, { '', {||}, 'Processamentos' } )
 
 	@ oDefSize:GetDimension("oPanel","LININI"), oDefSize:GetDimension("oPanel","COLINI") MSPANEL oPanel;
