@@ -56,7 +56,7 @@ static function makePath( cPath )
 
 		if makeDir( cPath ) != 0
 
-			ApMsgStop('Não foi possível criar a pasta: "' + cPath + '", consulte o erros: ' + cValtoChar( fError() ) )
+			ApMsgStop('Não foi possível criar a pasta: "' + cPath + '", consulte o erro: ' + cValtoChar( fError() ) )
 
 			return .F.
 
