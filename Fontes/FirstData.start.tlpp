@@ -100,7 +100,7 @@ static function showBrowseLayouts()
 
 	oBrowse:setDataArray()
 	oBrowse:setArray( aLinesBrw )
-	oBrowse:disableConfig()
+	//oBrowse:disableConfig()
 	oBrowse:disableReport()
 	oBrowse:SetLocate()
 
@@ -140,7 +140,7 @@ static function getDataLayout( cLayoutFile, cCode, cVersion, cDescription )
 	oJson:fromJSON( MemoRead( cLayoutFile, .F. ) )
 
 	cCode        := oJson['CODIGO']
-	cVersion     := Transform( oJson['VERSAO'], cVersionPicture )
+	cVersion     := oJson['VERSAO']
 	cDescription := oJson['DESCRICAO']
 
 return
@@ -233,7 +233,7 @@ static function LayoutMaintenance( nOperation )
 	@ 110, 005 GET oMltGetFinallity VAR cMltGetFinallity OF oDlg MULTILINE SIZE 300, 050 HSCROLL PIXEL
 
 	@ 175, 005 SAY oSayChannels PROMPT 'Canais' SIZE 300, 010 OF oDlg PIXEL
-	oTreeChannels := xTree():New( 185, 005, 300, 305, oDlg)
+	oTreeChannels := xTree():New( 185, 005, 300, 305, oDlg,,,{ |a,b,c,e,f,g| dblClick(a,b,c,e,f,g) })
 
 	oMenuPopUp     := TMenu():New(0,0,0,0,.T.)
 
@@ -257,29 +257,37 @@ Return
 static function channelMaintenance( oTreeChannels, nOperation, oJsonLayout )
 
 	local isEmpty      := oTreeChannels:isEmpty()
-	local cName        := FwInputBox( 'Informe o Nome do Canal.', Space( 20 ) )
+	local cName        := ''
 	local cCargo       := ''
 	local cCargoFather := ''
+	local nType        := 0
 
 	if nOperation == 1
 
+		cName  := FwInputBox( 'Informe o Nome do Canal.', Space( 20 ) )
 		cCargo := FWUUIDV4(.F.)
 
 		if isEmpty
 
 			cCargoFather := ''
 
-			oTreeChannels:AddItem ( cName, cCargo, 'FOLDER5', 'FOLDER6', 1 )
+			nType := 1
 
 		else
 
 			cCargoFather := oTreeChannels:GetCargo()
 
-			oTreeChannels:AddItem ( cName, cCargo, 'FOLDER5', 'FOLDER6', 2 )
+			nType := 2
 
 		end if
 
-		aAdd( oJsonLayout['channels'], { "name": cName, "cargo": cCargo, "cargoFather": cCargoFather } )
+		oTreeChannels:AddItem ( cName, cCargo, 'FOLDER5', 'FOLDER6', nType )
+
+		aAdd( oJsonLayout['channels'], { "name": cName, "cargo": cCargo, "cargoFather": cCargoFather, "fields":{} } )
+
+	elseif nOperation == 2
+	elseif nOperation == 3
+	elseif nOperation == 4
 
 	else
 
@@ -290,5 +298,9 @@ return
 static function funcok(oComboSeparador)
 
 	Alert('ok !!!')
+
+return
+
+static function dblClick(a,b,c,e,f,g)
 
 return
