@@ -217,23 +217,23 @@ static function LayoutMaintenance( nOperation )
 	@ 035, 090 SAY oSayDescription PROMPT 'Descrição' SIZE 210, 010 OF oDlg PIXEL
 	@ 045, 090 MSGET oGetDescription VAR cGetDescription SIZE 210, 010 OF oDlg PICTURE '@!' PIXEL
 
-	@ 035, 305 SAY oSaySeparator PROMPT 'Separador' SIZE 070, 010 OF oDlg PIXEL
-	@ 045, 305 MSCOMBOBOX oComboSeparator VAR cComboSeparator ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
+	@ 065, 005 SAY oSaySeparator PROMPT 'Separador' SIZE 070, 010 OF oDlg PIXEL
+	@ 075, 005 MSCOMBOBOX oComboSeparator VAR cComboSeparator ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
 
-	@ 035, 380 SAY oSayEncode PROMPT 'Codepage' SIZE 070, 010 OF oDlg PIXEL
-	@ 045, 380 MSCOMBOBOX oComboEncode VAR cComboEncode ITEMS {"CP-1252","UTF-8"} SIZE 070, 013 OF oDlg PIXEL
+	@ 065, 080 SAY oSayEncode PROMPT 'Codepage' SIZE 070, 010 OF oDlg PIXEL
+	@ 075, 080 MSCOMBOBOX oComboEncode VAR cComboEncode ITEMS {"CP-1252","UTF-8"} SIZE 070, 013 OF oDlg PIXEL
 
-	@ 035, 455 SAY oSaySepDecimal PROMPT 'Separador Decimal' SIZE 070, 010 OF oDlg PIXEL
-	@ 045, 455 MSCOMBOBOX oComboSepDecimal VAR cComboSepDecimal ITEMS {"Vírgula (,)","Ponto (.)"} SIZE 070, 013 OF oDlg PIXEL
+	@ 065, 155 SAY oSaySepDecimal PROMPT 'Separador Decimal' SIZE 070, 010 OF oDlg PIXEL
+	@ 075, 155 MSCOMBOBOX oComboSepDecimal VAR cComboSepDecimal ITEMS {"Vírgula (,)","Ponto (.)"} SIZE 070, 013 OF oDlg PIXEL
 
-	@ 035, 530 SAY oSayFormatDate PROMPT 'Formato da Data' SIZE 070, 010 OF oDlg PIXEL
-	@ 045, 530 MSCOMBOBOX oComboFormatDate VAR cComboFormatDate ITEMS {"DD/MM/AAAA","AAAAMMDD"} SIZE 070, 013 OF oDlg PIXEL
+	@ 065, 230 SAY oSayFormatDate PROMPT 'Formato da Data' SIZE 070, 010 OF oDlg PIXEL
+	@ 075, 230 MSCOMBOBOX oComboFormatDate VAR cComboFormatDate ITEMS {"DD/MM/AAAA","AAAAMMDD"} SIZE 070, 013 OF oDlg PIXEL
 
-	@ 065, 005 SAY oSayFinallity PROMPT 'Finalidade' SIZE 595, 010 OF oDlg PIXEL
-	@ 075, 005 GET oMltGetFinallity VAR cMltGetFinallity OF oDlg MULTILINE SIZE 595, 050 HSCROLL PIXEL
+	@ 100, 005 SAY oSayFinallity PROMPT 'Finalidade' SIZE 300, 010 OF oDlg PIXEL
+	@ 110, 005 GET oMltGetFinallity VAR cMltGetFinallity OF oDlg MULTILINE SIZE 300, 050 HSCROLL PIXEL
 
-	@ 135, 005 SAY oSayChannels PROMPT 'Canais' SIZE 595, 010 OF oDlg PIXEL
-	oTreeChannels := xTree():New( 145, 005, 300, 600, oDlg)
+	@ 175, 005 SAY oSayChannels PROMPT 'Canais' SIZE 300, 010 OF oDlg PIXEL
+	oTreeChannels := xTree():New( 185, 005, 300, 305, oDlg)
 
 	oMenuPopUp     := TMenu():New(0,0,0,0,.T.)
 
