@@ -1,5 +1,10 @@
 #include 'totvs.ch'
+#include 'fwbrowse.ch'
 #include 'tlpp-core.th'
+
+#define FD_LAYOUT_INCLUDE 1
+#define FD_LAYOUT_UPDATE  2
+#define FD_LAYOUT_COPY    3
 
 namespace FirstData
 
@@ -71,47 +76,35 @@ static function showBrowseLayouts()
 	Local oDefSize    := FwDefSize():New( .T. )
 	Local cTitle      := 'First Data - Definição de Layouts'
 	Local oDlg        := nil
-	Local oPanel      := nil
-	local aButtons    := {}
-	Local oBrowse     := nil
-	Local aLinesBrw   := {}
+	Local oColumn     := nil
 
-	oDefSize:AddObject ( 'oPanel' , 000, 000, .T., .T. )
+	Private oBrowse     := nil
+	Private aLinesBrw   := {}
+
 	oDefSize:Process()
 
 	DEFINE MSDIALOG oDlg TITLE cTitle FROM  oDefSize:aWindSize[1],oDefSize:aWindSize[2];
 		TO oDefSize:aWindSize[3],oDefSize:aWindSize[4] PIXEL
 
-	aAdd( aButtons, { '', {|| LayoutMaintenance( 1 ) }, 'Incluir' } )
-	aAdd( aButtons, { '', {||}, 'Alterar' } )
-	aAdd( aButtons, { '', {||}, 'Copiar' } )
-	aAdd( aButtons, { '', {||}, 'Deletar' } )
-	aAdd( aButtons, { '', {||}, 'Importar' } )
-	aAdd( aButtons, { '', {||}, 'Exportar' } )
-	aAdd( aButtons, { '', {||}, 'Processamentos' } )
-
-	@ oDefSize:GetDimension("oPanel","LININI"), oDefSize:GetDimension("oPanel","COLINI") MSPANEL oPanel;
-		SIZE oDefSize:GetDimension("oPanel","XSIZE"), oDefSize:GetDimension("oPanel","YSIZE") OF oDlg
-
-	oBrowse := fwBrowse():New()
-	oBrowse:setOwner( oPanel )
-
 	getLayouts( aLinesBrw )
 
-	oBrowse:setDataArray()
-	oBrowse:setArray( aLinesBrw )
-	//oBrowse:disableConfig()
-	oBrowse:disableReport()
-	oBrowse:SetLocate()
+	DEFINE FWFORMBROWSE oBrowse DATA ARRAY ARRAY aLinesBrw OF oDlg
 
-	oBrowse:addColumn({'Código'   , {|| PadR( aLinesBrw[ oBrowse:nAt, 01 ], 10 ) }, 'C', '@!'           , 1, 05, 0, .F.,,.F.,, 'aLinesBrw[ oBrowse:nAt, 01 ]',,.F., .T., ,'COL1' } )
-	oBrowse:addColumn({'Versão'   , {|| PadR( aLinesBrw[ oBrowse:nAt, 02 ], 04 ) }, 'C', cVersionPicture, 1, 05, 0, .F.,,.F.,, 'aLinesBrw[ oBrowse:nAt, 02 ]',,.F., .T., ,'COL2' } )
-	oBrowse:addColumn({'Descrição', {|| PadR( aLinesBrw[ oBrowse:nAt, 03 ], 50 ) }, 'C', '@!'           , 1, 20, 0, .F.,,.F.,, 'aLinesBrw[ oBrowse:nAt, 03 ]',,.F., .T., ,'COL3' } )
+	ADD BUTTON oButton TITLE 'Incluir'        ACTION { || LayoutMaintenance( FD_LAYOUT_INCLUDE ) } OPERATION 3 OF oBrowse
+	ADD BUTTON oButton TITLE 'Copiar'         ACTION { || LayoutMaintenance( FD_LAYOUT_COPY    ) } OPERATION 3 OF oBrowse
+	ADD BUTTON oButton TITLE 'Alterar'        ACTION { || LayoutMaintenance( FD_LAYOUT_UPDATE  ) } OPERATION 4 OF oBrowse
+	ADD BUTTON oButton TITLE 'Deletar'        ACTION { || } OPERATION 5 OF oBrowse
+	ADD BUTTON oButton TITLE 'Importar'       ACTION { || } OPERATION 6 OF oBrowse
+	ADD BUTTON oButton TITLE 'Exportar'       ACTION { || } OPERATION 6 OF oBrowse
+	ADD BUTTON oButton TITLE 'Processamentos' ACTION { || } OPERATION 6 OF oBrowse
 
-	oBrowse:Activate(.T.)
+	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 1 ] } TITLE "Código"    SIZE 10 PICTURE '@!'            OF oBrowse
+	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 2 ] } TITLE "Versão"    SIZE 03 PICTURE cVersionPicture OF oBrowse
+	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 3 ] } TITLE "Descrição" SIZE 50 PICTURE '@!'            OF oBrowse
 
-	ACTIVATE MSDIALOG oDlg CENTERED;
-		ON INIT EnchoiceBar( oDlg, {||Nil}, {||oDlg:End()},,aButtons,,,.F.,.F.,.F.,.F.,.F. )
+	ACTIVATE FWFORMBROWSE oBrowse
+
+	ACTIVATE MSDIALOG oDlg CENTERED
 
 return
 
@@ -127,7 +120,7 @@ static function getLayouts( aLinesBrw )
 
 		getDataLayout( cLayoutsPath + aLayouts[ nX, 1 ], @cCode, @cVersion, @cDescription )
 
-		aAdd( aLinesBrw, { cCode, cVersion, cDescription } )
+		aAdd( aLinesBrw, { cCode, cVersion, cDescription, cLayoutsPath + aLayouts[ nX, 1 ] } )
 
 	next nX
 
@@ -139,9 +132,9 @@ static function getDataLayout( cLayoutFile, cCode, cVersion, cDescription )
 
 	oJson:fromJSON( MemoRead( cLayoutFile, .F. ) )
 
-	cCode        := oJson['CODIGO']
-	cVersion     := oJson['VERSAO']
-	cDescription := oJson['DESCRICAO']
+	cCode        := oJson['code']
+	cVersion     := oJson['version']
+	cDescription := oJson['description']
 
 return
 
@@ -151,7 +144,7 @@ static function LayoutMaintenance( nOperation )
 	Local aOperacao   := {'Inclusão', 'Alteração', 'Visualização' }
 	Local cTitle      := 'First Data - ' + aOperacao[ nOperation ] + ' de Layouts'
 	Local oDlg        := nil
-	Local oJsonLayout := nil
+	Local oJsonLayout := JsonObject():New()
 
 	Local oSayCode    := nil
 	Local oGetCode    := nil
@@ -194,43 +187,71 @@ static function LayoutMaintenance( nOperation )
 	Local oMenuItView    := nil
 	Local oMenuItDelete  := nil
 
-	if nOperation == 1
+	if nOperation == FD_LAYOUT_INCLUDE
 
-		oJsonLayout := { "channels" : array( 0 ) }
+		oJsonLayout['code']              := Space( 10 )
+		oJsonLayout['version']           := Space( 03 )
+		oJsonLayout['description']       := Space( 50 )
+		oJsonLayout['separator']         := 2
+		oJsonLayout['codepage']          := 2
+		oJsonLayout['decimal separator'] := 2
+		oJsonLayout['date format']       := 2
+		oJsonLayout['finality']          := ''
+		oJsonLayout['channels']          := array( 0 )
 
-	else
+	elseif nOperation == FD_LAYOUT_UPDATE .or. nOperation = FD_LAYOUT_COPY
+
+		oJsonLayout:fromJson( MemoRead( aLinesBrw[ oBrowse:At(), 4 ], .F. )  )
+
+		if nOperation = FD_LAYOUT_COPY
+
+			oJsonLayout['code']    := Space( 10 )
+			oJsonLayout['version'] := Space( 03 )
+
+		end if
 
 	end if
 
-	oDefSize:AddObject ( 'oBrowse' , 000, 000, .T., .T. )
 	oDefSize:Process()
 
 	DEFINE MSDIALOG oDlg TITLE cTitle FROM  oDefSize:aWindSize[1],oDefSize:aWindSize[2];
 		TO oDefSize:aWindSize[3],oDefSize:aWindSize[4] PIXEL
 
 	@ 035, 005 SAY oSayCode PROMPT 'Código' SIZE 050, 010 OF oDlg PIXEL
-	@ 045, 005 MSGET oGetCode VAR cGetCode SIZE 050, 010 OF oDlg PICTURE '@!' PIXEL
+	@ 045, 005 MSGET oGetCode VAR oJsonLayout['code'] SIZE 050, 010 OF oDlg PICTURE '@!' PIXEL
+
+	oGetCode:lActive := nOperation == FD_LAYOUT_INCLUDE .or. nOperation == FD_LAYOUT_COPY
 
 	@ 035, 060 SAY oSayVersion PROMPT 'Versão' SIZE 020, 010 OF oDlg PIXEL
-	@ 045, 060 MSGET oGetVersion VAR cGetVersion SIZE 020, 010 OF oDlg  PICTURE cVersionPicture PIXEL
+	@ 045, 060 MSGET oGetVersion VAR oJsonLayout['version'] SIZE 020, 010 OF oDlg  PICTURE cVersionPicture PIXEL
+
+	oGetVersion:lActive := nOperation == FD_LAYOUT_INCLUDE .or. nOperation == FD_LAYOUT_COPY
 
 	@ 035, 090 SAY oSayDescription PROMPT 'Descrição' SIZE 210, 010 OF oDlg PIXEL
-	@ 045, 090 MSGET oGetDescription VAR cGetDescription SIZE 210, 010 OF oDlg PICTURE '@!' PIXEL
+	@ 045, 090 MSGET oGetDescription VAR oJsonLayout['description'] SIZE 210, 010 OF oDlg PICTURE '@!' PIXEL
 
 	@ 065, 005 SAY oSaySeparator PROMPT 'Separador' SIZE 070, 010 OF oDlg PIXEL
 	@ 075, 005 MSCOMBOBOX oComboSeparator VAR cComboSeparator ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
 
+	oComboSeparator:nAt := oJsonLayout['separator']
+
 	@ 065, 080 SAY oSayEncode PROMPT 'Codepage' SIZE 070, 010 OF oDlg PIXEL
 	@ 075, 080 MSCOMBOBOX oComboEncode VAR cComboEncode ITEMS {"CP-1252","UTF-8"} SIZE 070, 013 OF oDlg PIXEL
+
+	oComboEncode:nAt := oJsonLayout['codepage']
 
 	@ 065, 155 SAY oSaySepDecimal PROMPT 'Separador Decimal' SIZE 070, 010 OF oDlg PIXEL
 	@ 075, 155 MSCOMBOBOX oComboSepDecimal VAR cComboSepDecimal ITEMS {"Vírgula (,)","Ponto (.)"} SIZE 070, 013 OF oDlg PIXEL
 
+	oComboSepDecimal:nAt := oJsonLayout['decimal separator']
+
 	@ 065, 230 SAY oSayFormatDate PROMPT 'Formato da Data' SIZE 070, 010 OF oDlg PIXEL
 	@ 075, 230 MSCOMBOBOX oComboFormatDate VAR cComboFormatDate ITEMS {"DD/MM/AAAA","AAAAMMDD"} SIZE 070, 013 OF oDlg PIXEL
 
+	oComboFormatDate:nAt := oJsonLayout['date format']
+
 	@ 100, 005 SAY oSayFinallity PROMPT 'Finalidade' SIZE 300, 010 OF oDlg PIXEL
-	@ 110, 005 GET oMltGetFinallity VAR cMltGetFinallity OF oDlg MULTILINE SIZE 300, 050 HSCROLL PIXEL
+	@ 110, 005 GET oMltGetFinallity VAR oJsonLayout['finality'] OF oDlg MULTILINE SIZE 300, 050 HSCROLL PIXEL
 
 	@ 175, 005 SAY oSayChannels PROMPT 'Canais' SIZE 300, 010 OF oDlg PIXEL
 	oTreeChannels := xTree():New( 185, 005, 300, 305, oDlg,,,{ |a,b,c,e,f,g| dblClick(a,b,c,e,f,g) })
@@ -250,7 +271,7 @@ static function LayoutMaintenance( nOperation )
 	oTreeChannels:SetPopup( oMenuPopUp )
 
 	ACTIVATE MSDIALOG oDlg CENTERED;
-		ON INIT EnchoiceBar( oDlg, {||funcok(oComboSeparador),oDlg:End()}, {||oDlg:End()},,,,,.F.,.F.,.F.,.T./*Exibe Botão Confirmar*/,.F. )
+		ON INIT EnchoiceBar( oDlg, {|| procMaintenance( nOperation, oJsonLayout ), oDlg:End()}, {||oDlg:End()},,,,,.F.,.F.,.F.,.T./*Exibe Botão Confirmar*/,.F. )
 
 Return
 
@@ -287,7 +308,6 @@ static function channelMaintenance( oTreeChannels, nOperation, oJsonLayout )
 
 	elseif nOperation == 2
 	elseif nOperation == 3
-	elseif nOperation == 4
 
 	else
 
@@ -295,9 +315,26 @@ static function channelMaintenance( oTreeChannels, nOperation, oJsonLayout )
 
 return
 
-static function funcok(oComboSeparador)
+static function procMaintenance( nOperation, oJsonLayout )
 
-	Alert('ok !!!')
+	if nOperation == 1
+
+		if MemoWrite( cLayoutsPath + AllTrim( oJsonLayout['code'] ) + '.' + AllTrim( oJsonLayout['version'] ) + '.json', oJsonLayout:toJson() )
+
+			aAdd( aLinesBrw , { oJsonLayout['code'], oJsonLayout['version'], oJsonLayout['description'] } )
+
+			oBrowse:Refresh()
+
+		else
+
+			ApMsgAlert( 'Erro na gravação do layout' )
+
+		end if
+
+	elseif nOperation == 2
+	elseif nOperation == 3
+	else
+	end if
 
 return
 
