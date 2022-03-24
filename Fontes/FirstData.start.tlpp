@@ -148,15 +148,12 @@ static function LayoutMaintenance( nOperation )
 
 	Local oSayCode    := nil
 	Local oGetCode    := nil
-	Local cGetCode    := Space(10)
 
 	Local oSayVersion := nil
 	Local oGetVersion := nil
-	Local cGetVersion := Space(3)
 
 	Local oSayDescription := nil
 	Local oGetDescription := nil
-	Local cGetDescription := Space(50)
 
 	Local oSaySeparator   := nil
 	Local oComboSeparator := nil
@@ -176,7 +173,6 @@ static function LayoutMaintenance( nOperation )
 
 	Local oSayFinallity    := nil
 	Local oMltGetFinallity := nil
-	Local cMltGetFinallity := ''
 
 	Local oSayChannels  := nil
 	Local oTreeChannels := nil
@@ -192,10 +188,10 @@ static function LayoutMaintenance( nOperation )
 		oJsonLayout['code']              := Space( 10 )
 		oJsonLayout['version']           := Space( 03 )
 		oJsonLayout['description']       := Space( 50 )
-		oJsonLayout['separator']         := 2
-		oJsonLayout['codepage']          := 2
-		oJsonLayout['decimal separator'] := 2
-		oJsonLayout['date format']       := 2
+		oJsonLayout['separator']         := 1
+		oJsonLayout['codepage']          := 1
+		oJsonLayout['decimal separator'] := 1
+		oJsonLayout['date format']       := 1
 		oJsonLayout['finality']          := ''
 		oJsonLayout['channels']          := array( 0 )
 
@@ -317,11 +313,15 @@ return
 
 static function procMaintenance( nOperation, oJsonLayout )
 
-	if nOperation == 1
+	local cFileJson := ''
 
-		if MemoWrite( cLayoutsPath + AllTrim( oJsonLayout['code'] ) + '.' + AllTrim( oJsonLayout['version'] ) + '.json', oJsonLayout:toJson() )
+	if nOperation == FD_LAYOUT_INCLUDE
 
-			aAdd( aLinesBrw , { oJsonLayout['code'], oJsonLayout['version'], oJsonLayout['description'] } )
+		cFileJson := cLayoutsPath + AllTrim( oJsonLayout['code'] ) + '.' + AllTrim( oJsonLayout['version'] ) + '.json'
+
+		if MemoWrite( cFileJson, oJsonLayout:toJson() )
+
+			aAdd( aLinesBrw , { oJsonLayout['code'], oJsonLayout['version'], oJsonLayout['description'], cFileJson } )
 
 			oBrowse:Refresh()
 
@@ -331,8 +331,8 @@ static function procMaintenance( nOperation, oJsonLayout )
 
 		end if
 
-	elseif nOperation == 2
-	elseif nOperation == 3
+	elseif nOperation == FD_LAYOUT_UPDATE
+	elseif nOperation == FD_LAYOUT_COPY
 	else
 	end if
 
