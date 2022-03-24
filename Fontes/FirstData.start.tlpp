@@ -279,7 +279,7 @@ static function channelMaintenance( oTreeChannels, nOperation, oJsonLayout )
 	local cCargoFather := ''
 	local nType        := 0
 
-	if nOperation == 1
+	if nOperation == FD_LAYOUT_INCLUDE
 
 		cName  := FwInputBox( 'Informe o Nome do Canal.', Space( 20 ) )
 		cCargo := FWUUIDV4(.F.)
@@ -302,8 +302,8 @@ static function channelMaintenance( oTreeChannels, nOperation, oJsonLayout )
 
 		aAdd( oJsonLayout['channels'], { "name": cName, "cargo": cCargo, "cargoFather": cCargoFather, "fields":{} } )
 
-	elseif nOperation == 2
-	elseif nOperation == 3
+	elseif nOperation == FD_LAYOUT_UPDATE
+	elseif nOperation == FD_LAYOUT_COPY
 
 	else
 
