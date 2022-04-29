@@ -3,8 +3,8 @@
 #include 'tlpp-core.th'
 
 #define FD_LAYOUT_INCLUDE 1
-#define FD_LAYOUT_UPDATE  2
-#define FD_LAYOUT_COPY    3
+#define FD_LAYOUT_COPY    2
+#define FD_LAYOUT_UPDATE  3
 
 namespace FirstData
 
@@ -28,11 +28,6 @@ user function BrowserLayout()
 	private cMainPath       := cDirSeparator + 'First_Data'
 	private cEmpPath        := cMainPath + cDirSeparator + cEmpAnt
 	private cLayoutsPath    := cEmpPath + cDirSeparator + 'layouts' + cDirSeparator
-
-	//private oFontBrw    := TFont():New( 'Consolas',,-12 )
-	//private oFontBtn    := TFont():New( 'Consolas',,-12,,.T. )
-
-	private cVersionPicture := '@!R N.NN'
 
 	if CheckPathStruct()
 
@@ -77,9 +72,9 @@ static function showBrowseLayouts()
 	Local cTitle      := 'First Data - Definição de Layouts'
 	Local oDlg        := nil
 	Local oColumn     := nil
+	Local oBrowse     := nil
 
-	Private oBrowse     := nil
-	Private aLinesBrw   := {}
+	Private aLinesBrw := {}
 
 	oDefSize:Process()
 
@@ -90,17 +85,17 @@ static function showBrowseLayouts()
 
 	DEFINE FWFORMBROWSE oBrowse DATA ARRAY ARRAY aLinesBrw OF oDlg
 
-	ADD BUTTON oButton TITLE 'Incluir'        ACTION { || LayoutMaintenance( FD_LAYOUT_INCLUDE ) } OPERATION 3 OF oBrowse
-	ADD BUTTON oButton TITLE 'Copiar'         ACTION { || LayoutMaintenance( FD_LAYOUT_COPY    ) } OPERATION 3 OF oBrowse
-	ADD BUTTON oButton TITLE 'Alterar'        ACTION { || LayoutMaintenance( FD_LAYOUT_UPDATE  ) } OPERATION 4 OF oBrowse
-	ADD BUTTON oButton TITLE 'Deletar'        ACTION { || } OPERATION 5 OF oBrowse
-	ADD BUTTON oButton TITLE 'Importar'       ACTION { || } OPERATION 6 OF oBrowse
-	ADD BUTTON oButton TITLE 'Exportar'       ACTION { || } OPERATION 6 OF oBrowse
-	ADD BUTTON oButton TITLE 'Processamentos' ACTION { || } OPERATION 6 OF oBrowse
+	ADD BUTTON oButton TITLE 'Incluir'            ACTION { || layoutMaintenance( FD_LAYOUT_INCLUDE ) } OPERATION 3 OF oBrowse
+	ADD BUTTON oButton TITLE 'Copiar'             ACTION { || layoutMaintenance( FD_LAYOUT_COPY    ) } OPERATION 3 OF oBrowse
+	ADD BUTTON oButton TITLE 'Alterar'            ACTION { || layoutMaintenance( FD_LAYOUT_UPDATE  ) } OPERATION 4 OF oBrowse
+	ADD BUTTON oButton TITLE 'Deletar'            ACTION { || } OPERATION 5 OF oBrowse
+	ADD BUTTON oButton TITLE 'Importar'           ACTION { || } OPERATION 6 OF oBrowse
+	ADD BUTTON oButton TITLE 'Exportar'           ACTION { || } OPERATION 6 OF oBrowse
+	ADD BUTTON oButton TITLE 'Processar'          ACTION { || } OPERATION 6 OF oBrowse
+	ADD BUTTON oButton TITLE 'Planilha do layout' ACTION { || } OPERATION 6 OF oBrowse
 
-	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 1 ] } TITLE "Código"    SIZE 10 PICTURE '@!'            OF oBrowse
-	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 2 ] } TITLE "Versão"    SIZE 03 PICTURE cVersionPicture OF oBrowse
-	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 3 ] } TITLE "Descrição" SIZE 50 PICTURE '@!'            OF oBrowse
+	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 1 ] } TITLE "Nome"      SIZE 10 PICTURE '@!' OF oBrowse
+	ADD COLUMN oColumn DATA { | oBrowse | aLinesBrw[ oBrowse:At(), 2 ] } TITLE "Descrição" SIZE 50 PICTURE '@!' OF oBrowse
 
 	ACTIVATE FWFORMBROWSE oBrowse
 
@@ -112,232 +107,283 @@ static function getLayouts( aLinesBrw )
 
 	local aLayouts     := Directory( cLayoutsPath + '*.json',,, .F., 1 )
 	local nX           := 0
-	local cCode        := ''
-	local cVersion     := ''
+	local cName        := ''
 	local cDescription := ''
 
 	for nX := 1 to len( aLayouts )
 
-		getDataLayout( cLayoutsPath + aLayouts[ nX, 1 ], @cCode, @cVersion, @cDescription )
+		getDataLayout( cLayoutsPath + aLayouts[ nX, 1 ], @cName, @cDescription )
 
-		aAdd( aLinesBrw, { cCode, cVersion, cDescription, cLayoutsPath + aLayouts[ nX, 1 ] } )
+		aAdd( aLinesBrw, { cName, cDescription, cLayoutsPath + aLayouts[ nX, 1 ] } )
 
 	next nX
 
 return
 
-static function getDataLayout( cLayoutFile, cCode, cVersion, cDescription )
+
+static function getDataLayout( cLayoutFile, cName, cDescription )
 
 	local oJson := JsonObject():New()
 
 	oJson:fromJSON( MemoRead( cLayoutFile, .F. ) )
 
-	cCode        := oJson['code']
-	cVersion     := oJson['version']
-	cDescription := oJson['description']
+	cName        := oJson['nome']
+	cDescription := oJson['descricao']
 
 return
 
-static function LayoutMaintenance( nOperation )
+static function layoutMaintenance( nType )
 
-	Local oDefSize    := FwDefSize():New( .T. )
-	Local aOperacao   := {'Inclusão', 'Alteração', 'Visualização' }
-	Local cTitle      := 'First Data - ' + aOperacao[ nOperation ] + ' de Layouts'
-	Local oDlg        := nil
-	Local oJsonLayout := JsonObject():New()
+	Local oDefSize := FwDefSize():New( .T. )
+	Local aTitulo  := { 'Inclusão', 'Cópia', 'Alteração' }
+	Local cTitle   := 'First Data - Layouts - ' + aTitulo[ nType ]
+	Local oDlg     := nil
 
-	Local oSayCode    := nil
-	Local oGetCode    := nil
+	Local cComboTpPesqHeader := ''
+	Local cCpoBuscaHeader    := Space(12)
 
-	Local oSayVersion := nil
-	Local oGetVersion := nil
+	Local cComboTpPesqDetail := ''
+	Local cCpoBuscaDetail    := Space(12)
 
-	Local oSayDescription := nil
-	Local oGetDescription := nil
+	Private oBrwCposHeader := nil
+	Private aBrwCposHeader := {}
 
-	Local oSaySeparator   := nil
-	Local oComboSeparator := nil
-	Local cComboSeparator := ''
+	Private oBrwCposDetail := nil
+	Private aBrwCposDetail := {}
 
-	Local oSayEncode   := nil
-	Local oComboEncode := nil
-	Local cComboEncode := ''
+	Private cName         := Space(015)
+	Private cDescription  := Space(080)
+	Private cFormulaAdvpl := Space(250)
 
-	Local oSaySepDecimal   := nil
-	Local oComboSepDecimal := nil
-	Local cComboSepDecimal := ''
+	Private cKeyHeader       := Space(250)
+	Private cTableBaseHeader := Space(003)
 
-	Local oSayFormatDate   := nil
-	Local oComboFormatDate := nil
-	Local cComboFormatDate := ''
+	Private cKeyDetail       := Space(250)
+	Private cTableBaseDetail := Space(003)
 
-	Local oSayFinallity    := nil
-	Local oMltGetFinallity := nil
-
-	Local oSayChannels  := nil
-	Local oTreeChannels := nil
-
-	Local oMenuPopUp     := nil
-	Local oMenuItInclude := nil
-	Local oMenuItUpdate  := nil
-	Local oMenuItView    := nil
-	Local oMenuItDelete  := nil
-
-	if nOperation == FD_LAYOUT_INCLUDE
-
-		oJsonLayout['code']              := Space( 10 )
-		oJsonLayout['version']           := Space( 03 )
-		oJsonLayout['description']       := Space( 50 )
-		oJsonLayout['separator']         := 1
-		oJsonLayout['codepage']          := 1
-		oJsonLayout['decimal separator'] := 1
-		oJsonLayout['date format']       := 1
-		oJsonLayout['finality']          := ''
-		oJsonLayout['channels']          := array( 0 )
-
-	elseif nOperation == FD_LAYOUT_UPDATE .or. nOperation = FD_LAYOUT_COPY
-
-		oJsonLayout:fromJson( MemoRead( aLinesBrw[ oBrowse:At(), 4 ], .F. )  )
-
-		if nOperation = FD_LAYOUT_COPY
-
-			oJsonLayout['code']    := Space( 10 )
-			oJsonLayout['version'] := Space( 03 )
-
-		end if
-
-	end if
+	Private jLayout          := jsonObject():new()
 
 	oDefSize:Process()
+
+	//TODO
+	//TODO
+	//TODO
+	//TODO
+	//TODO
+	//TODO
+	//TODO
+	//TODO
 
 	DEFINE MSDIALOG oDlg TITLE cTitle FROM  oDefSize:aWindSize[1],oDefSize:aWindSize[2];
 		TO oDefSize:aWindSize[3],oDefSize:aWindSize[4] PIXEL
 
-	@ 035, 005 SAY oSayCode PROMPT 'Código' SIZE 050, 010 OF oDlg PIXEL
-	@ 045, 005 MSGET oGetCode VAR oJsonLayout['code'] SIZE 050, 010 OF oDlg PICTURE '@!' PIXEL
+	@ 035, 015 SAY "Nome" OF oDlg PIXEL
+	@ 045, 015 GET oGetName VAR cName OF oDlg  SIZE 065,010  PIXEL
+	oGetName:cToolTip := "Nome do Layout"
 
-	oGetCode:lActive := nOperation == FD_LAYOUT_INCLUDE .or. nOperation == FD_LAYOUT_COPY
+	@ 035, 085 SAY "Descrição" OF oDlg PIXEL
+	@ 045, 085 GET oGetDescription VAR cDescription OF oDlg SIZE 300,010  PIXEL
+	oGetDescription:cToolTip := "Descrição do Layout"
 
-	@ 035, 060 SAY oSayVersion PROMPT 'Versão' SIZE 020, 010 OF oDlg PIXEL
-	@ 045, 060 MSGET oGetVersion VAR oJsonLayout['version'] SIZE 020, 010 OF oDlg  PICTURE cVersionPicture PIXEL
+	@ 065, 015 SAY "Fórmula Advpl" OF oDlg PIXEL
+	@ 075, 015 GET oGetFormulaAdvpl VAR cFormulaAdvpl OF oDlg SIZE 400,010  PIXEL
+	oGetFormulaAdvpl:cToolTip := "Fórmula Advpl de processamento de importação"
 
-	oGetVersion:lActive := nOperation == FD_LAYOUT_INCLUDE .or. nOperation == FD_LAYOUT_COPY
+	@ 095, 015 FOLDER oFolder SIZE 450, 230  OF Odlg ITEMS "Campos do Cabeçalho", "Campos do Detalhe" PIXEL
 
-	@ 035, 090 SAY oSayDescription PROMPT 'Descrição' SIZE 210, 010 OF oDlg PIXEL
-	@ 045, 090 MSGET oGetDescription VAR oJsonLayout['description'] SIZE 210, 010 OF oDlg PICTURE '@!' PIXEL
+	/** Folder Campos do Cabeçalho **/
 
-	@ 065, 005 SAY oSaySeparator PROMPT 'Separador' SIZE 070, 010 OF oDlg PIXEL
-	@ 075, 005 MSCOMBOBOX oComboSeparator VAR cComboSeparator ITEMS {"Ponto e Vírgula (;)","Tabulação (TAB)"} SIZE 070, 013 OF oDlg PIXEL
+	@ 005, 005 SAY "Chave de Identificação" OF oFolder:aDialogs[1] PIXEL
+	@ 015, 005 GET cKeyHeader OF oFolder:aDialogs[1]  SIZE 400,010  PIXEL
+	TBtnBmp2():New( 030, 810, 026, 026, 'BMPDEL.PNG',,,, {|| cKeyHeader := Space(250) }, oFolder:aDialogs[1], 'Limpar a Chave' )
 
-	oComboSeparator:nAt := oJsonLayout['separator']
+	@ 035, 005 LISTBOX oBrwCposHeader Fields HEADER 'Campo', 'Descrição', 'Tipo', 'Tamanho', 'Decimal', 'Obrigatório', 'Dicionário';
+		SIZE 400, 150 OF oFolder:aDialogs[1] PIXEL
 
-	@ 065, 080 SAY oSayEncode PROMPT 'Codepage' SIZE 070, 010 OF oDlg PIXEL
-	@ 075, 080 MSCOMBOBOX oComboEncode VAR cComboEncode ITEMS {"CP-1252","UTF-8"} SIZE 070, 013 OF oDlg PIXEL
+	TBtnBmp2():New( 140, 820, 026, 026, 'GOTOP.PNG'   ,,,, {||  }, oFolder:aDialogs[1], 'Move o campo para o começo da lista' )
+	TBtnBmp2():New( 180, 820, 026, 026, 'UP.PNG'      ,,,, {||  }, oFolder:aDialogs[1], 'Move o campo para cima'              )
+	TBtnBmp2():New( 220, 820, 026, 026, 'DOWN.PNG'    ,,,, {||  }, oFolder:aDialogs[1], 'Move o campo para baixo'             )
+	TBtnBmp2():New( 260, 820, 026, 026, 'GOBOTTOM.PNG',,,, {||  }, oFolder:aDialogs[1], 'Move o campo para o fim da lista'    )
 
-	oComboEncode:nAt := oJsonLayout['codepage']
+	TBtnBmp2():New( 380, 010, 026, 026, 'BMPINCLUIR.PNG',,,, {||  }, oFolder:aDialogs[1], 'Incluir Campo'    )
+	TBtnBmp2():New( 380, 040, 026, 026, 'BPMSDOCA.PNG',,,, {||  }, oFolder:aDialogs[1], 'Editar Campo'    )
+	TBtnBmp2():New( 380, 070, 026, 026, 'BMPDEL.PNG',,,, {||  }, oFolder:aDialogs[1], 'Excluir campo'    )
+	TBtnBmp2():New( 380, 100, 026, 026, 'CHAVE2.PNG',,,, {||  }, oFolder:aDialogs[1], 'Adicionar o campo na chave de identificação'    )
+	TBtnBmp2():New( 380, 130, 026, 026, 'SDUZAP.PNG',,,, {||  }, oFolder:aDialogs[1], 'Limpar lista de campos'    )
 
-	@ 065, 155 SAY oSaySepDecimal PROMPT 'Separador Decimal' SIZE 070, 010 OF oDlg PIXEL
-	@ 075, 155 MSCOMBOBOX oComboSepDecimal VAR cComboSepDecimal ITEMS {"Vírgula (,)","Ponto (.)"} SIZE 070, 013 OF oDlg PIXEL
+	@ 185, 100 SAY "Tabela Base" OF oFolder:aDialogs[1] PIXEL
+	@ 192, 100 GET cTableBaseHeader OF oFolder:aDialogs[1] PICTURE "@!" SIZE 030,010  PIXEL
+	TBtnBmp2():New( 380, 260, 026, 026, 'LUPA.PNG',,,, {||  }, oFolder:aDialogs[1], 'Busca Tabelas do Dicionário'    )
+	TBtnBmp2():New( 380, 290, 026, 026, 'BMPTABLE.PNG',,,, {||  }, oFolder:aDialogs[1], 'Busca os campos da Tabela Base'    )
 
-	oComboSepDecimal:nAt := oJsonLayout['decimal separator']
+	@ 185, 180 SAY "Pesquisar campo por" OF oFolder:aDialogs[1] PIXEL
+	@ 192, 180 MSCOMBOBOX oComboSeparator VAR cComboTpPesqHeader ITEMS {"Nome do Campo","Descrição do Campo"} SIZE 070, 013 OF oFolder:aDialogs[1] PIXEL
 
-	@ 065, 230 SAY oSayFormatDate PROMPT 'Formato da Data' SIZE 070, 010 OF oDlg PIXEL
-	@ 075, 230 MSCOMBOBOX oComboFormatDate VAR cComboFormatDate ITEMS {"DD/MM/AAAA","AAAAMMDD"} SIZE 070, 013 OF oDlg PIXEL
+	@ 185, 255 SAY "Nome do Campo" OF oFolder:aDialogs[1] PIXEL
+	@ 192, 255 GET cCpoBuscaHeader OF oFolder:aDialogs[1] PICTURE "@!" SIZE 070,010  PIXEL
+	TBtnBmp2():New( 380, 650, 026, 026, 'BMPCPO.PNG',,,, {||  }, oFolder:aDialogs[1], 'Busca Campo na lista' )
 
-	oComboFormatDate:nAt := oJsonLayout['date format']
+	Aadd(aBrwCposHeader,{"Campo","Descrição","Tipo","Tamanho","Decimal","Obrigatório","Dicionário"})
+	Aadd(aBrwCposHeader,{"Campo","Descrição","Tipo","Tamanho","Decimal","Obrigatório","Dicionário"})
 
-	@ 100, 005 SAY oSayFinallity PROMPT 'Finalidade' SIZE 300, 010 OF oDlg PIXEL
-	@ 110, 005 GET oMltGetFinallity VAR oJsonLayout['finality'] OF oDlg MULTILINE SIZE 300, 050 HSCROLL PIXEL
+	oBrwCposHeader:SetArray(aBrwCposHeader)
+	oBrwCposHeader:bLine := {|| {;
+		aBrwCposHeader[oBrwCposHeader:nAt,1],;
+		aBrwCposHeader[oBrwCposHeader:nAt,2],;
+		aBrwCposHeader[oBrwCposHeader:nAt,3],;
+		aBrwCposHeader[oBrwCposHeader:nAt,4],;
+		aBrwCposHeader[oBrwCposHeader:nAt,5],;
+		aBrwCposHeader[oBrwCposHeader:nAt,6],;
+		aBrwCposHeader[oBrwCposHeader:nAt,7];
+		}}
 
-	@ 175, 005 SAY oSayChannels PROMPT 'Canais' SIZE 300, 010 OF oDlg PIXEL
-	oTreeChannels := xTree():New( 185, 005, 300, 305, oDlg,,,{ |a,b,c,e,f,g| dblClick(a,b,c,e,f,g) })
+	/** Folder Campos do Cabeçalho **/
 
-	oMenuPopUp     := TMenu():New(0,0,0,0,.T.)
+	@ 005, 005 SAY "Chave de Identificação" OF oFolder:aDialogs[2] PIXEL
+	@ 015, 005 GET cKeyDetail OF oFolder:aDialogs[2]  SIZE 400,010  PIXEL
+	TBtnBmp2():New( 030, 810, 026, 026, 'BMPDEL',,,, {|| cKeyDetail := Space(250) }, oFolder:aDialogs[2], 'Limpar a Chave' )
 
-	oMenuItInclude := TMenuItem():New(oDlg, 'Incluir'    ,,,, { || channelMaintenance( oTreeChannels, 1, oJsonLayout ) },,,,,,,,,.T.)
-	oMenuItUpdate  := TMenuItem():New(oDlg, 'Alterar'    ,,,, { || channelMaintenance( oTreeChannels, 2, oJsonLayout ) },,,,,,,,,.T.)
-	oMenuItView    := TMenuItem():New(oDlg, 'Visualizar' ,,,, { || channelMaintenance( oTreeChannels, 3, oJsonLayout ) },,,,,,,,,.T.)
-	oMenuItDelete  := TMenuItem():New(oDlg, 'Deletar'    ,,,, { || channelMaintenance( oTreeChannels, 4, oJsonLayout ) },,,,,,,,,.T.)
+	@ 035, 005 LISTBOX oBrwCposDetail Fields HEADER 'Campo', 'Descrição', 'Tipo', 'Tamanho', 'Decimal', 'Obrigatório', 'Dicionário';
+		SIZE 400, 150 OF oFolder:aDialogs[2] PIXEL
 
-	oMenuPopUp:Add( oMenuItInclude )
-	oMenuPopUp:Add( oMenuItUpdate  )
-	oMenuPopUp:Add( oMenuItView    )
-	oMenuPopUp:Add( oMenuItDelete  )
+	TBtnBmp2():New( 140, 820, 026, 026, 'GOTOP.PNG'   ,,,, {||  }, oFolder:aDialogs[2], 'Move o campo para o começo da lista' )
+	TBtnBmp2():New( 180, 820, 026, 026, 'UP.PNG'      ,,,, {||  }, oFolder:aDialogs[2], 'Move o campo para cima'              )
+	TBtnBmp2():New( 220, 820, 026, 026, 'DOWN.PNG'    ,,,, {||  }, oFolder:aDialogs[2], 'Move o campo para baixo'             )
+	TBtnBmp2():New( 260, 820, 026, 026, 'GOBOTTOM.PNG',,,, {||  }, oFolder:aDialogs[2], 'Move o campo para o fim da lista'    )
 
-	oTreeChannels:SetPopup( oMenuPopUp )
+	TBtnBmp2():New( 380, 010, 026, 026, 'BMPINCLUIR.PNG',,,, {||  }, oFolder:aDialogs[2], 'Incluir Campo'    )
+	TBtnBmp2():New( 380, 040, 026, 026, 'BPMSDOCA.PNG',,,, {||  }, oFolder:aDialogs[2], 'Editar Campo'    )
+	TBtnBmp2():New( 380, 070, 026, 026, 'BMPDEL.PNG',,,, {||  }, oFolder:aDialogs[2], 'Excluir campo'    )
+	TBtnBmp2():New( 380, 100, 026, 026, 'CHAVE2.PNG',,,, {||  }, oFolder:aDialogs[2], 'Adicionar o campo na chave de identificação'    )
+	TBtnBmp2():New( 380, 130, 026, 026, 'SDUZAP.PNG',,,, {||  }, oFolder:aDialogs[2], 'Limpar lista de campos'    )
+
+	@ 185, 100 SAY "Tabela Base" OF oFolder:aDialogs[2] PIXEL
+	@ 192, 100 GET cTableBaseDetail OF oFolder:aDialogs[2] PICTURE "@!" SIZE 030,010  PIXEL
+	TBtnBmp2():New( 380, 260, 026, 026, 'LUPA.PNG',,,, {||  }, oFolder:aDialogs[2], 'Busca Tabelas do Dicionário'    )
+	TBtnBmp2():New( 380, 290, 026, 026, 'BMPTABLE.PNG',,,, {||  }, oFolder:aDialogs[2], 'Busca os campos da Tabela Base'    )
+
+	@ 185, 180 SAY "Pesquisar campo por" OF oFolder:aDialogs[2] PIXEL
+	@ 192, 180 MSCOMBOBOX oComboSeparator VAR cComboTpPesqDetail ITEMS {"Nome do Campo","Descrição do Campo"} SIZE 070, 013 OF oFolder:aDialogs[2] PIXEL
+
+	@ 185, 255 SAY "Nome do Campo" OF oFolder:aDialogs[2] PIXEL
+	@ 192, 255 GET cCpoBuscaDetail OF oFolder:aDialogs[2] PICTURE "@!" SIZE 070,010  PIXEL
+	TBtnBmp2():New( 380, 650, 026, 026, 'BMPCPO.PNG',,,, {||  }, oFolder:aDialogs[2], 'Busca Campo na lista' )
+
+	Aadd(aBrwCposDetail,{"Campo","Descrição","Tipo","Tamanho","Decimal","Obrigatório","Dicionário"})
+	Aadd(aBrwCposDetail,{"Campo","Descrição","Tipo","Tamanho","Decimal","Obrigatório","Dicionário"})
+
+	oBrwCposDetail:SetArray(aBrwCposDetail)
+	oBrwCposDetail:bLine := {|| {;
+		aBrwCposDetail[oBrwCposDetail:nAt,1],;
+		aBrwCposDetail[oBrwCposDetail:nAt,2],;
+		aBrwCposDetail[oBrwCposDetail:nAt,3],;
+		aBrwCposDetail[oBrwCposDetail:nAt,4],;
+		aBrwCposDetail[oBrwCposDetail:nAt,5],;
+		aBrwCposDetail[oBrwCposDetail:nAt,6],;
+		aBrwCposDetail[oBrwCposDetail:nAt,7];
+		}}
+
+	if nType == FD_LAYOUT_INCLUDE
+
+	elseif nType == FD_LAYOUT_COPY
+
+		cName        := Space(015)
+		cDescription := Space(080)
+
+	elseif nType == FD_LAYOUT_UPDATE
+
+		oGetName:Disable()
+		oGetDescription:Disable()
+
+	else
+
+	end if
 
 	ACTIVATE MSDIALOG oDlg CENTERED;
-		ON INIT EnchoiceBar( oDlg, {|| procMaintenance( nOperation, oJsonLayout ), oDlg:End()}, {||oDlg:End()},,,,,.F.,.F.,.F.,.T./*Exibe Botão Confirmar*/,.F. )
+		ON INIT EnchoiceBar( oDlg, { || if( gravaLayout(), oDlg:End(), nil ) }, {||oDlg:End()},,,,,.F.,.F.,.F.,.T./*Exibe Botão Confirmar*/,.F. )
 
-Return
+return
 
-static function channelMaintenance( oTreeChannels, nOperation, oJsonLayout )
+static function gravaLayout()
 
-	local isEmpty      := oTreeChannels:isEmpty()
-	local cName        := ''
-	local cCargo       := ''
-	local cCargoFather := ''
-	local nType        := 0
+	local lRet := ! Empty( cName ) .And. ! empty( cDescription )
 
-	if nOperation == FD_LAYOUT_INCLUDE
+	if lRet
 
-		cName  := FwInputBox( 'Informe o Nome do Canal.', Space( 20 ) )
-		cCargo := FWUUIDV4(.F.)
-
-		if isEmpty
-
-			cCargoFather := ''
-
-			nType := 1
-
-		else
-
-			cCargoFather := oTreeChannels:GetCargo()
-
-			nType := 2
-
-		end if
-
-		oTreeChannels:AddItem ( cName, cCargo, 'FOLDER5', 'FOLDER6', nType )
-
-		aAdd( oJsonLayout['channels'], { "name": cName, "cargo": cCargo, "cargoFather": cCargoFather, "fields":{} } )
-
-	elseif nOperation == FD_LAYOUT_UPDATE
-	elseif nOperation == FD_LAYOUT_COPY
+		jLayout['nome'] := cName
+		jLayout['descricao'] := cDescription
+		jLayout['formula'] := cFormulaAdvpl
+		jLayout['codificacao'] := "windows-1252"
+		jLayout['formato_data'] := "AAAAMMDD"
+		jLayout['formato_numerico'] := "9999.99"
+		jLayout['separador'] := "TAB"
+		jLayout['cabecalho'] := { "chave" : cKeyHeader, "tabela": cTableBaseHeader, "campos": {} }
+		jLayout['itens'] := { "chave" : cKeyDetail, "tabela": cTableBaseDetail, "campos": {} }
 
 	else
 
+		ApMsgStop( 'Os campos Nome e Descrição são obrgatórios.' )
+
 	end if
 
-return
+return lRet
+/* 
+{
+	"nome": "ATFA012",
+	"descricao": "Cadastro de Ativos",
+	"formula": "MsExecauto({|X,Y,Z|ATFA012(X,Y,Z)},_FD['cabecalho'],_FD['itens'],3)",
+	"codificacao": "windows-1252",
+	"formato_data": "AAAAMMDD",
+	"formato_numerico": "9999.99",
+	"separador": "TAB",
+	"cabecalho": {
+		"chave": "N1_CBASE+N1_ITEM",
+		"tabela": "SN1",
+		"campos": [
+			{
+				"nome": "N1_CBASE",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			},
+			{
+				"nome": "N1_ITEM",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			}
+		]
+	},
+	"itens": {
+		"chave": "N3_CBASE+N3_ITEM",
+		"tabela": "SN3",
+		"campos": [
+			{
+				"nome": "N3_CBASE",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			},
+			{
+				"nome": "N3_ITEM",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			}
+		]
+	}
+}
 
-static function procMaintenance( nOperation, oJsonLayout )
-
-	local cFileJson := ''
-
-	if nOperation == FD_LAYOUT_INCLUDE
-
-		cFileJson := cLayoutsPath + AllTrim( oJsonLayout['code'] ) + '.' + AllTrim( oJsonLayout['version'] ) + '.json'
-
-		if MemoWrite( cFileJson, oJsonLayout:toJson() )
-
-			aAdd( aLinesBrw , { oJsonLayout['code'], oJsonLayout['version'], oJsonLayout['description'], cFileJson } )
-
-			oBrowse:Refresh()
-
-		else
-
-			ApMsgAlert( 'Erro na gravação do layout' )
-
-		end if
-
-	elseif nOperation == FD_LAYOUT_UPDATE
-	elseif nOperation == FD_LAYOUT_COPY
-	else
-	end if
-
-return
-
-static function dblClick(a,b,c,e,f,g)
-
-return
+ */

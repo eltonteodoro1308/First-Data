@@ -1,0 +1,163 @@
+#include 'totvs.ch'
+#include 'tlpp-core.th'
+
+namespace FirstData
+
+user function start()
+
+	//Cria o MsApp
+	MsApp():New('SIGAESP')
+	oApp:CreateEnv()
+
+	//Define o programa que será executado após o login
+	oApp:cStartProg    := 'FirstData.u_BrowserLayout'
+
+	//Inicia a Janela
+	oApp:Activate()
+
+return
+
+
+user function BrowserLayout()
+
+	if CheckEnvironment()
+
+		showBrowse()
+
+	end if
+
+return
+
+static function CheckEnvironment()
+
+	local nX               := 0
+	local cPrefix          := 'FirstData_'
+
+	local cLayoutsTable    := cPrefix + 'layouts' + cEmpAnt
+
+	local nLenLayoutCode            := 10
+	local nLenLayoutVersion         := 03
+	local nLenLayoutDescription     := 50
+
+	local aLayoutFields := {;
+		{ 'CODE'     , 'C', nLenLayoutCode        , 00 },;
+		{ 'VERSION'  , 'C', nLenLayoutVersion     , 00 },;
+		{ 'DESCRIPT' , 'C', nLenLayoutDescription , 00 },;
+		{ 'JSON'     , 'M', 10                    , 00 } }
+
+	local aLayoutIndex := {;
+		{ cLayoutsTable , 'CODE+VERSION', { || CODE+VERSION }},;
+		{ cLayoutsTable , 'DESCRIPT'   , { || DESCRIPT    }} }
+
+	// local cProcessingTable := cPrefix + 'processing' + cEmpAnt
+	// local nLenProcessingCode        := 10
+	// local nLenProcessingVersion     := 03
+	// local nLenProcessingDescription := 50
+
+	local cDriver                   := 'TOPCONN'
+
+	//** Abre a Tabela de Layouts
+	DBUseArea( .F., cDriver, cLayoutsTable, cLayoutsTable, .F., .F. )
+
+	//** Valida a existencia da tabela no banco
+	if ! TcCanOpen( cLayoutsTable )
+
+		DBCreate( cLayoutsTable, aLayoutFields, cDriver )
+
+		DBUseArea( .F., cDriver, cLayoutsTable, cLayoutsTable, .F., .F. )
+
+	end if
+
+	//** Valida a existência dos índices
+	for nX := 1 to len( aLayoutIndex )
+
+		if ! TcCanOpen( cLayoutsTable, aLayoutIndex[ nX, 1 ] + cValToChar( nX ) )
+
+			( cLayoutsTable )->( DBCreateIndex( aLayoutIndex[ nX, 1 ] + cValToChar( nX ),;
+				aLayoutIndex[ nX, 2 ] , aLayoutIndex[ nX, 3 ] ) )
+
+		end if
+
+	next nX
+
+	//** Fecha todos os índices da área de trabalho corrente
+	( cLayoutsTable )->( DBClearIndex() )
+
+	//** Define a ordem dos indices
+	for nX := 1 to len( aLayoutIndex )
+
+		( cLayoutsTable )->( dbSetIndex( aLayoutIndex[ nX, 1 ] + cValToChar( nX ) ) )
+
+	next nX
+
+	/** Valida a existencia da tabela de processamentos (processing)
+	if ! file( cProcessingFile  + cExtensionFile)
+
+		DBCreate( cProcessingFile + cExtensionFile, {;
+			{ 'CODE'      , 'C', nLenProcessingCode        , 00 },;
+			{ 'VERSION'   , 'C', nLenProcessingVersion     , 00 },;
+			{ 'DESCRIPIT' , 'C', nLenProcessingDescription , 00 },;
+			{ 'LAY_CODE'  , 'C', nLenLayoutCode            , 00 },;
+			{ 'LAY_VERS'  , 'C', nLenLayoutVersion         , 00 } ;
+			}, cDriver )
+
+	end if*/
+
+return .T.
+
+static function showBrowse()
+
+	Local oBrowse  := nil
+	Local oDlg     := nil
+	Local oDfSzDlg    := FwDefSize():New( .F. )
+	Local oDfSzBtn    := FwDefSize():New( .F. )
+
+	oDfSzDlg:AddObject ( 'oButtons'  , 000, 015, .T., .F. )
+	oDfSzDlg:AddObject ( 'oBrowse'   , 000, 000, .T., .T. )
+	oDfSzDlg:Process()	
+
+	oDfSzBtn:AddObject ( 'oBtnInclude' , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnChange'  , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnVersion' , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnDelete'  , 055, 015, .F., .F. )
+	oDfSzBtn:AddObject ( 'oBtnEnd'     , 055, 015, .F., .F. )
+	oDfSzBtn:lLateral := .T.
+	oDfSzBtn:Process()
+
+	DbSelectArea('FIRSTDATA_LAYOUTS99')
+	
+	oDlgMain := MsDialog():New(;
+	/* nTop         */ oDfSzDlg:aWindSize[ 1 ] ,;
+	/* nLeft        */ oDfSzDlg:aWindSize[ 2 ] ,;
+	/* nBottom      */ oDfSzDlg:aWindSize[ 3 ] ,;
+	/* nRight       */ oDfSzDlg:aWindSize[ 4 ] ,;
+	/* cCaption     */                  cTitle ,;
+	/* uParam6      */                         ,;
+	/* uParam7      */                         ,;
+	/* uParam8      */                         ,;
+	/* uParam9      */                         ,;
+	/* nClrText     */                         ,;
+	/* nClrBack     */                         ,;
+	/* uParam12     */                         ,;
+	/* oWnd         */                         ,;
+	/* lPixel       */                     .T. ,;
+	/* uParam15     */                         ,;
+	/* uParam16     */                         ,;
+	/* uParam17     */                         ,;
+	/* lTransparent */                          )       
+
+	    
+	oBrowse := MsSelBr():New( oDfSzDlg:GetDimension( 'oPanel', 'LININI' ),;
+	oDfSzDlg:GetDimension( 'oPanel', 'COLINI' ),;
+	oDfSzDlg:GetDimension( 'oPanel', 'XSIZE' ),;
+	oDfSzDlg:GetDimension( 'oPanel', 'YSIZE' ),,,,oDlg,,,,,,,,,,,,.F.,'FIRSTDATA_LAYOUTS99',.T.,,.F.,,, )    
+	oBrowse:AddColumn(TCColumn():New('Codigo',{||FIRSTDATA_LAYOUTS99->CODE },,,,'LEFT',,.F.,.F.,,,,.F.,))    
+	oBrowse:AddColumn(TCColumn():New('Loja'  ,{||FIRSTDATA_LAYOUTS99->VERSION},,,,'LEFT',,.F.,.F.,,,,.F.,))    
+	oBrowse:AddColumn(TCColumn():New('Nome'  ,{||FIRSTDATA_LAYOUTS99->DESCRIPT},,,,'LEFT',,.F.,.F.,,,,.F.,))	    
+	 
+
+	SetKey( VK_F5, {|| ApMsgInfo( FIRSTDATA_LAYOUTS99->DESCRIPT )  })
+
+	ACTIVATE DIALOG oDlg CENTERED 
+
+return 

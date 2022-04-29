@@ -1,0 +1,57 @@
+{
+	"nome": "ATFA012",
+	"descricao": "Cadastro de Ativos",
+	"formula": "MsExecauto({|X,Y,Z|ATFA012(X,Y,Z)},${cabecalho},${itens},3)",
+	"codificacao": "windows-1252",
+	"formato_data": "AAAAMMDD",
+	"formato_numerico": "9999.99",
+	"separador": "TAB",
+	"cabecalho": {
+		"chave": "N1_CBASE+N1_ITEM",
+		"tabela": "SN1",
+		"campos": [
+			{
+				"nome": "N1_CBASE",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			},
+			{
+				"nome": "N1_ITEM",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			}
+		]
+	},
+	"itens": {
+		"chave": "N3_CBASE+N3_ITEM",
+		"tabela": "SN3",
+		"campos": [
+			{
+				"nome": "N3_CBASE",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			},
+			{
+				"nome": "N3_ITEM",
+				"descricao": "",
+				"tipo": "C",
+				"tamanho": "",
+				"decimal": "",
+				"obrigatorio": "S",
+				"dicionario": "S"
+			}
+		]
+	}
+}

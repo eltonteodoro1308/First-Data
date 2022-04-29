@@ -1,0 +1,19 @@
+- Melhorar a experiência na carga de dados iniciais no protheus (Cadastros, saldos iniciais, Movimentos em aberto, .... ).
+
+- Montagem do layout de importação mais simples.
+
+- Permitir visualizar uma prévia dos dados em txt com o layout definido.
+
+- Importar os dados em tabela intermediária, processar esses registros e para os que tiveram problemas possa ser feita um ajuste e reprocessar. 
+
+- Expor o resultado do processamento de forma mais clara (ID do registro ao invés de apenas a linha...).
+
+- Schedule .....
+
+- Monitor ....
+
+MATA410
+
+3
+
+

@@ -1,0 +1,56 @@
+{
+    "code": "MATA410XYZ",
+    "version": "1.00",
+    "name": "Importação Pedido de Venda",
+    "description": "Layout genérico para importação de Pedidos de Venda",
+    "type": "MVC/EXECAUTO/FUNCTION",
+    "shape": "FIXED/SEPARATOR",
+    "separator": ";",
+    "encode": "ANSI",
+    "adapter": "MATA410",
+    "formule": "MSEXECAUTO({|A,B,C|MATA410},3,${CABECALHO},${ITENS})",
+    "channel": {
+        "name": "CABECALHO",
+        "origem": "C:/TEMP/CABECALHO.CSV",
+        "id": "C5_NUM",
+        "fields": [{
+                "name": "C5_NUM",
+                "position": 1,
+                "start": 1,
+                "end": 5
+            }, {
+                "name": "C5_CLIENTE",
+                "position": 2,
+                "start": 1,
+                "end": 5
+            }, {
+                "name": "C5_LOJA",
+                "position": 3,
+                "start": 1,
+                "end": 5
+            }
+        ],
+        "channel": {
+            "name": "ITENS",
+            "origem": "C:/TEMP/CABECALHO/ITENS.CSV",
+            "id": "C6_NUM",
+            "fields": [{
+                    "name": "C6_NUM",
+                    "position": 1,
+                    "start": 1,
+                    "end": 5
+                }, {
+                    "name": "C6_PRODUTO",
+                    "position": 2,
+                    "start": 1,
+                    "end": 5
+                }, {
+                    "name": "C6_VLRUNIT",
+                    "position": 3,
+                    "start": 1,
+                    "end": 5
+                }
+            ]
+        }
+    }
+}

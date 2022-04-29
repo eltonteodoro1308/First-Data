@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Copiar e Colar</title>
+</head>
+
+<body>
+
+    <textarea id="recebe_copia" cols="30" rows="10"></textarea>
+    <script>
+        const target = document.querySelector('#recebe_copia');
+
+        target.addEventListener('paste', (event) => {
+            let paste1 = (event.clipboardData || window.clipboardData).getData('text/html')
+            document.querySelector('#container').srcdoc = paste1
+
+            let paste2 = (event.clipboardData || window.clipboardData).getData('text').split('\r\n');
+            console.log([...paste2].reduce((p, c) => {
+                    p.push(c.split('\t'))
+                    return p
+                }, [])
+                //paste = paste.toUpperCase();
+
+                //event.preventDefault();
+            )
+
+        })
+    </script>
+
+    <iframe id="container" style="width: 100em; height: 100em;"></div>
+</body>
+
+</html>

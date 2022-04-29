@@ -1,0 +1,33 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "Depuração do idioma TOTVS",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "C:\\TOTVS\\SmartClient_Harpia\\smartclient.exe",
+			"isMultiSession": true,
+			"enableTableSync": true
+		}
+	],
+	"lastPrograms": [
+		{
+			"label": "firstdata.u_start"
+		},
+		{
+			"label": "firstdata.u_brwGrid"
+		},
+		{
+			"label": "u_fsbitmap"
+		},
+		{
+			"label": "sigacfg"
+		},
+		{
+			"label": "u_TBtnBmp2"
+		}
+	],
+	"lastProgramExecuted": "firstdata.u_start"
+}
